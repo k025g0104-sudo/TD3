@@ -1,7 +1,8 @@
 #pragma once
 class gameScene{
 	enum GameScene
-	{
+	{ 
+
 		basebool,
 		FlappyBird,
 		Western,
