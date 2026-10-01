@@ -6,59 +6,77 @@
 
 using namespace KamataEngine;
 
-void gameScene::Intialize() {}
-void gameScene::Update() {
+void gameScene::Intialize()
+{
+	
+}
+void gameScene::Update()
+{
 	Input* input = Input::GetInstance();
+
+	switch (scene_)
+	{
+	case Title:
+		// タイトルでSPACEを押したらゲームへ
+		if (input->TriggerKey(DIK_SPACE))
+		{
+			scene_ = Game;
+		}
+		break;
+
+	case Game:
+	// ミニゲームの切り替え
 	switch (ganeScene_)
 	{
 	case gameScene::basebool:
-		if (input->TriggerKey(DIK_SPACE)) {
+		if (input->TriggerKey(DIK_SPACE)) 
+		{
 			ganeScene_ = FlappyBird;
 		}
 		break;
 	case gameScene::FlappyBird:
-		if (input->TriggerKey(DIK_SPACE)) {
+		if (input->TriggerKey(DIK_SPACE))
+		{
 			ganeScene_ = Western;
 		}
 		break;
 	case gameScene::Western:
-		if (input->TriggerKey(DIK_SPACE)) {
+		if (input->TriggerKey(DIK_SPACE)) 
+		{
 			ganeScene_ = RockBreaker;
 		}
 		break;
 	case gameScene::RockBreaker:
-		if (input->TriggerKey(DIK_SPACE)) {
+		if (input->TriggerKey(DIK_SPACE)) 
+		{
 			ganeScene_ = RunningFromThtPolice;
 		}
 		break;
 	case gameScene::RunningFromThtPolice:
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = basebool;
+		if (input->TriggerKey(DIK_SPACE))
+		{
+			scene_ = Clear;
 		}
 		break;
 	default:
 		break;
 	}
-}
-void gameScene::Draw() {
-	switch (ganeScene_)
-	{
-	case gameScene::basebool:
-		printf("basebool\n");
+	break;
+
+	case Clear:
+		// SPACEを押したらタイトルへ戻る
+		if (input->TriggerKey(DIK_SPACE))
+		{
+			scene_ = Title;
+			ganeScene_ = basebool;
+		}
 		break;
-	case gameScene::FlappyBird:
-		printf("FlappyBird\n");
-		break;
-	case gameScene::Western:
-		printf("Western\n");
-		break;
-	case gameScene::RockBreaker:
-		printf("RockBreaker\n");	
-		break;
-	case gameScene::RunningFromThtPolice:
-		printf("RunningFromThtPolice\n");
-		break;
+
 	default:
 		break;
 	}
+}
+void gameScene::Draw() 
+{
+	
 }
