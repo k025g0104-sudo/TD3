@@ -1,5 +1,15 @@
 #pragma once
-class gameScene{
+class gameScene
+{
+	// 大きなシーン
+	enum Scene
+	{
+		Title,
+		Game,
+		Clear,
+	};
+
+	// ミニゲーム
 	enum GameScene
 	{ 
 
@@ -10,7 +20,12 @@ class gameScene{
 		RunningFromThtPolice,
 	};
 
+	// 現在のシーン
+	Scene scene_ = Title;
+
+	// 現在のミニゲーム
 	GameScene ganeScene_ = basebool;
+
 public:
 	void Intialize();
 	void Update();
