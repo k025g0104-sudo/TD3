@@ -1,121 +1,196 @@
+
 #include "gameScene.h"
 #include "KamataEngine.h"
-#pragma comment(lib,"dinput8.lib")
-#pragma comment(lib,"dxguid.lib")
+#include "baseBall.h"
 
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 
 using namespace KamataEngine;
 
+static const char* SceneName(int s)
+{
+    switch (s)
+    {
+    case 0: return "basebool";
+    case 1: return "FlappyBird";
+    case 2: return "Western";
+    case 3: return "RockBreaker";
+    case 4: return "RunningFromThtPolice";
+    default: return "Unknown";
+    }
+}
+
+gameScene::~gameScene()
+{
+    delete baseBall_;
+    delete gameCamera_;
+
+    delete baseballModel_;
+    delete batModel_;
+    delete chickModel_;
+}
+
 void gameScene::Intialize()
 {
-	// 野球ボールモデルを読み込む
-	baseballModel_ = Model::CreateFromOBJ("baseboll");
+    // 野球ゲームの初期化
+    baseBall_ = new baseBall();
+    baseBall_->Initialize();
 
-	// 野球ボールのワールドトランスフォームを初期化
-	baseballWorldTransform_.Initialize();
+    // カメラの初期化
+    gameCamera_ = new GameCamera();
+    gameCamera_->Initialize();
 
-	// バットモデルを読み込む
-	batModel_ = Model::CreateFromOBJ("bat");
+    // 野球ボールモデル
+    baseballModel_ = Model::CreateFromOBJ("baseboll");
+    baseballWorldTransform_.Initialize();
 
-	// バットのワールドトランスフォームを初期化
-	batWorldTransform_.Initialize();
+    // バットモデル
+    batModel_ = Model::CreateFromOBJ("bat");
+    batWorldTransform_.Initialize();
 
-	// ヒヨコモデルを読み込む
-	chickModel_ = Model::CreateFromOBJ("Chick");
-
-	// ヒヨコのワールドトランスフォームを初期化
-	chickWorldTransform_.Initialize();
-
-	// 描画確認用カメラを初期化
-	camera_.Initialize();
-
-	// カメラを手前に移動
-	camera_.translation_ = { 0.0f, 0.0f, -10.0f };
-
-	// カメラ行列を更新
-	camera_.UpdateMatrix();
-
+    // ヒヨコモデル
+    chickModel_ = Model::CreateFromOBJ("Chick");
+    chickWorldTransform_.Initialize();
 }
+
 void gameScene::Update()
 {
-	Input* input = Input::GetInstance();
+    Input* input = Input::GetInstance();
 
-	switch (scene_)
-	{
-	case Title:
-		// タイトルでSPACEを押したらゲームへ
-		if (input->TriggerKey(DIK_SPACE))
-		{
-			scene_ = Game;
-		}
-		break;
+    // カメラ更新
+    gameCamera_->Update();
 
-	case Game:
-	// ミニゲームの切り替え
-	switch (ganeScene_)
-	{
-	case gameScene::basebool:
-		if (input->TriggerKey(DIK_SPACE)) 
-		{
-			ganeScene_ = FlappyBird;
-		}
-		break;
-	case gameScene::FlappyBird:
-		if (input->TriggerKey(DIK_SPACE))
-		{
-			ganeScene_ = Western;
-		}
-		break;
-	case gameScene::Western:
-		if (input->TriggerKey(DIK_SPACE)) 
-		{
-			ganeScene_ = RockBreaker;
-		}
-		break;
-	case gameScene::RockBreaker:
-		if (input->TriggerKey(DIK_SPACE)) 
-		{
-			ganeScene_ = RunningFromThtPolice;
-		}
-		break;
-	case gameScene::RunningFromThtPolice:
-		if (input->TriggerKey(DIK_SPACE))
-		{
-			scene_ = Clear;
-		}
-		break;
-	default:
-		break;
-	}
-	break;
+    switch (scene_)
+    {
+    case Title:
+        // タイトルからゲームへ
+        if (input->TriggerKey(DIK_SPACE))
+        {
+            scene_ = Game;
+        }
+        break;
 
-	case Clear:
-		// SPACEを押したらタイトルへ戻る
-		if (input->TriggerKey(DIK_SPACE))
-		{
-			scene_ = Title;
-			ganeScene_ = basebool;
-		}
-		break;
+    case Game:
+        // ミニゲームの切り替え
+        switch (ganeScene_)
+        {
+        case gameScene::basebool:
+            baseBall_->Update();
 
-	default:
-		break;
-	}
+            if (input->TriggerKey(DIK_SPACE))
+            {
+                ganeScene_ = FlappyBird;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+            break;
+
+        case gameScene::FlappyBird:
+            if (input->TriggerKey(DIK_SPACE))
+            {
+                ganeScene_ = Western;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+            break;
+
+        case gameScene::Western:
+            if (input->TriggerKey(DIK_SPACE))
+            {
+                ganeScene_ = RockBreaker;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+            break;
+
+        case gameScene::RockBreaker:
+            if (input->TriggerKey(DIK_SPACE))
+            {
+                ganeScene_ = RunningFromThtPolice;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+            break;
+
+        case gameScene::RunningFromThtPolice:
+            if (input->TriggerKey(DIK_SPACE))
+            {
+                scene_ = Clear;
+            }
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    case Clear:
+        // クリアからタイトルへ
+        if (input->TriggerKey(DIK_SPACE))
+        {
+            scene_ = Title;
+            ganeScene_ = basebool;
+        }
+        break;
+
+    default:
+        break;
+    }
 }
-void gameScene::Draw() 
+
+void gameScene::Draw()
 {
-	// 3Dモデル描画前処理
-	Model::PreDraw();
+    switch (scene_)
+    {
+    case Title:
+        // タイトル画面（今後実装）
+        break;
 
-	// 野球ボールを描画
-	baseballModel_->Draw(baseballWorldTransform_, camera_);
+    case Game:
+        switch (ganeScene_)
+        {
+        case gameScene::basebool:
+            // チームメンバーの野球ゲーム描画
+            baseBall_->Draw(gameCamera_->GetCamera());
 
-	// バットを描画
-	batModel_->Draw(batWorldTransform_, camera_);
+            // 3Dモデル描画
+            Model::PreDraw();
 
-	// ヒヨコを描画
-	chickModel_->Draw(chickWorldTransform_, camera_);
+            baseballModel_->Draw(
+                baseballWorldTransform_, gameCamera_->GetCamera());
 
-	// 3Dモデル描画後処理
-	Model::PostDraw();
+            batModel_->Draw(
+                batWorldTransform_, gameCamera_->GetCamera());
+
+            chickModel_->Draw(
+                chickWorldTransform_, gameCamera_->GetCamera());
+
+            Model::PostDraw();
+            break;
+
+        case gameScene::FlappyBird:
+            break;
+
+        case gameScene::Western:
+            break;
+
+        case gameScene::RockBreaker:
+            break;
+
+        case gameScene::RunningFromThtPolice:
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    case Clear:
+        // クリア画面（今後実装）
+        break;
+
+    default:
+        break;
+    }
 }
