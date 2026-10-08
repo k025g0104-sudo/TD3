@@ -48,6 +48,10 @@ class gameScene
     KamataEngine::Model* chickModel_ = nullptr;
     KamataEngine::WorldTransform chickWorldTransform_;
 
+    // Western用のGanモデル
+    KamataEngine::Model* ganModel_ = nullptr;
+    KamataEngine::WorldTransform ganWorldTransform_;
+
     // ヒヨコのジャンプ処理
     float chickVelocityY_ = 0.0f;
 

@@ -28,6 +28,7 @@ gameScene::~gameScene()
     delete baseballModel_;
     delete batModel_;
     delete chickModel_;
+    delete ganModel_;
 }
 
 void gameScene::Intialize()
@@ -51,6 +52,13 @@ void gameScene::Intialize()
     // ヒヨコモデル
     chickModel_ = Model::CreateFromOBJ("Chick");
     chickWorldTransform_.Initialize();
+
+    // Ganモデルを読み込む
+    ganModel_ = Model::CreateFromOBJ("Gan");
+
+    // Ganのワールドトランスフォームを初期化
+    ganWorldTransform_.Initialize();
+
 }
 
 void gameScene::Update()
@@ -208,6 +216,13 @@ void gameScene::Draw()
             break;
 
         case gameScene::Western:
+            // Ganモデルを描画
+            Model::PreDraw();
+
+            ganModel_->Draw(
+                ganWorldTransform_, gameCamera_->GetCamera());
+
+            Model::PostDraw();
             break;
 
         case gameScene::RockBreaker:
