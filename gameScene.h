@@ -1,15 +1,4 @@
-#pragma once
-class gameScene
-{
-	// 大きなシーン
-	enum Scene
-	{
-		Title,
-		Game,
-		Clear,
-	};
-
-	// ミニゲーム
+#pragma once	
 #include "KamataEngine.h"
 #include "Camera.h"
 
@@ -25,6 +14,14 @@ class gameScene{
 		RunningFromThtPolice,
 	};
 
+	// 大きなシーン
+	enum Scene
+	{
+		Title,
+		Game,
+		Clear,
+	};
+
 	// 現在のシーン
 	Scene scene_ = Title;
 
@@ -33,15 +30,7 @@ class gameScene{
 	GameScene ganeScene_ = basebool;
 	baseBall* baseBall_ = nullptr;
 	GameCamera* gameCamera_ = nullptr;
-
-
-	// 現在のシーン
-	Scene scene_ = Title;
-
-	// 現在のミニゲーム
-	GameScene ganeScene_ = basebool;
-	baseBall* baseBall_ = nullptr;
-	GameCamera* gameCamera_ = nullptr;
+	
 public:
 	~gameScene();
 	void Intialize();

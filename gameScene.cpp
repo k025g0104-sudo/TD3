@@ -18,10 +18,21 @@ static const char* SceneName(int s) {
 	}
 }
 
+static const char* TitleScene(int scene) {
+	switch (scene) {
+	case 0: return "Title";
+	case 1: return "Game";
+	case 2: return "Clear";	
+	default:return "Unknown";
+	}
+}
+
+
 gameScene::~gameScene() {
 	delete baseBall_;
 	delete gameCamera_;
 }
+
 
 void gameScene::Intialize() {
 	baseBall_ = new baseBall();
@@ -35,68 +46,98 @@ void gameScene::Update() {
 	Input* input = Input::GetInstance();
 
 	gameCamera_->Update();
-
-	switch (ganeScene_)
+	switch (scene_)
 	{
-	case gameScene::basebool:
-		baseBall_->Update();
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = FlappyBird;
-			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+	case gameScene::Title:
+		if (input->TriggerKey(DIK_RETURN)) {
+			scene_ = Game;
+			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
 		}
 		break;
-	case gameScene::FlappyBird:
-		if (input->TriggerKey(DIK_SPACE))
+	case gameScene::Game:		
+		if (input->TriggerKey(DIK_RETURN)) {
+			scene_ = Clear;
+			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
+		}
+		switch (ganeScene_)
 		{
-			ganeScene_ = Western;
-			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+		case gameScene::basebool:
+			baseBall_->Update();
+			if (input->TriggerKey(DIK_SPACE)) {
+				ganeScene_ = FlappyBird;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::FlappyBird:
+			if (input->TriggerKey(DIK_SPACE))
+			{
+				ganeScene_ = Western;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::Western:
+			if (input->TriggerKey(DIK_SPACE))
+			{
+				ganeScene_ = RockBreaker;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::RockBreaker:
+			if (input->TriggerKey(DIK_SPACE))
+			{
+				ganeScene_ = RunningFromThtPolice;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::RunningFromThtPolice:
+			if (input->TriggerKey(DIK_SPACE)) {
+				ganeScene_ = basebool;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		default:
+			break;
 		}
 		break;
-	case gameScene::Western:
-		if (input->TriggerKey(DIK_SPACE)) 
-		{
-			ganeScene_ = RockBreaker;
-			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
-		}
-		break;
-	case gameScene::RockBreaker:
-		if (input->TriggerKey(DIK_SPACE)) 
-		{
-			ganeScene_ = RunningFromThtPolice;
-			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
-		}
-		break;
-	case gameScene::RunningFromThtPolice:
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = basebool;
-			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+	case gameScene::Clear:
+		if (input->TriggerKey(DIK_RETURN)) {
+			scene_ = Title;
+			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
 		}
 		break;
 	default:
 		break;
 	}
+
 }
 
 void gameScene::Draw() {
-	switch (ganeScene_)
+	switch (scene_)
 	{
-	case gameScene::basebool:
-		baseBall_->Draw(gameCamera_->GetCamera());
+	case gameScene::Title:
 		break;
-	case gameScene::FlappyBird:
+	case gameScene::Game:
+		switch (ganeScene_)
+		{
+		case gameScene::basebool:
+			baseBall_->Draw(gameCamera_->GetCamera());
+			break;
+		case gameScene::FlappyBird:
+			break;
+		case gameScene::Western:
+			break;
+		case gameScene::RockBreaker:
+			break;
+		case gameScene::RunningFromThtPolice:
+			break;
+		default:
+			break;
+		}
 		break;
-	case gameScene::Western:
+	case gameScene::Clear:
 		break;
-	case gameScene::RockBreaker:
-		break;
-	case gameScene::RunningFromThtPolice:
-		break;
-
 	default:
 		break;
 	}
-}
-void gameScene::Draw() 
-{
-	
+
 }
