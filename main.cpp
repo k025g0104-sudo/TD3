@@ -9,6 +9,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	KamataEngine::Initialize(L"TD3");
 
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	ImGuiManager* imguiManager = ImGuiManager::GetInstance();
 
 	gameScene* scene = new gameScene();
 	scene->Intialize();
@@ -18,10 +19,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			break;
 		}
 
+		imguiManager->Begin();    
 		scene->Update();
+		imguiManager->End();
 
 		dxCommon->PreDraw();
 		scene->Draw();
+		imguiManager->Draw();
 		dxCommon->PostDraw();
 	}
 
