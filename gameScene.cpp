@@ -46,19 +46,22 @@ void gameScene::Update() {
 		}
 		break;
 	case gameScene::FlappyBird:
-		if (input->TriggerKey(DIK_SPACE)) {
+		if (input->TriggerKey(DIK_SPACE))
+		{
 			ganeScene_ = Western;
 			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
 		}
 		break;
 	case gameScene::Western:
-		if (input->TriggerKey(DIK_SPACE)) {
+		if (input->TriggerKey(DIK_SPACE)) 
+		{
 			ganeScene_ = RockBreaker;
 			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
 		}
 		break;
 	case gameScene::RockBreaker:
-		if (input->TriggerKey(DIK_SPACE)) {
+		if (input->TriggerKey(DIK_SPACE)) 
+		{
 			ganeScene_ = RunningFromThtPolice;
 			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
 		}
@@ -88,7 +91,12 @@ void gameScene::Draw() {
 		break;
 	case gameScene::RunningFromThtPolice:
 		break;
+
 	default:
 		break;
 	}
+}
+void gameScene::Draw() 
+{
+	
 }
