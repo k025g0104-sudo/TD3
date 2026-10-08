@@ -1,4 +1,3 @@
-
 #include "gameScene.h"
 #include "KamataEngine.h"
 #include "baseBall.h"
@@ -69,6 +68,7 @@ void gameScene::Update()
         {
             scene_ = Game;
         }
+
         break;
 
     case Game:
@@ -78,46 +78,77 @@ void gameScene::Update()
         case gameScene::basebool:
             baseBall_->Update();
 
-            if (input->TriggerKey(DIK_SPACE))
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
             {
                 ganeScene_ = FlappyBird;
                 DebugText::GetInstance()->ConsolePrintf(
                     "Scene->%s\n", SceneName(ganeScene_));
             }
+#endif
             break;
 
         case gameScene::FlappyBird:
+
+            // Spaceキーを押した瞬間に上向きの速度を与える
             if (input->TriggerKey(DIK_SPACE))
+            {
+                chickVelocityY_ = kChickJumpPower;
+            }
+
+            // 重力によって落下速度を増加させる
+            chickVelocityY_ -= kChickGravity;
+
+            // 上下方向の位置を更新
+            chickWorldTransform_.translation_.y += chickVelocityY_;
+
+            // 座標から平行移動行列を作成
+            chickWorldTransform_.matWorld_ =
+                MathUtility::MakeTranslateMatrix(chickWorldTransform_.translation_);
+
+            // ワールド行列を転送
+            chickWorldTransform_.TransferMatrix();
+
+#ifdef _DEBUG
+            // デバッグ用シーン切り替え
+            if (input->TriggerKey(DIK_LSHIFT))
             {
                 ganeScene_ = Western;
                 DebugText::GetInstance()->ConsolePrintf(
                     "Scene->%s\n", SceneName(ganeScene_));
             }
+#endif
             break;
 
         case gameScene::Western:
-            if (input->TriggerKey(DIK_SPACE))
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
             {
                 ganeScene_ = RockBreaker;
                 DebugText::GetInstance()->ConsolePrintf(
                     "Scene->%s\n", SceneName(ganeScene_));
             }
+#endif
             break;
 
         case gameScene::RockBreaker:
-            if (input->TriggerKey(DIK_SPACE))
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
             {
                 ganeScene_ = RunningFromThtPolice;
                 DebugText::GetInstance()->ConsolePrintf(
                     "Scene->%s\n", SceneName(ganeScene_));
             }
+#endif
             break;
 
         case gameScene::RunningFromThtPolice:
-            if (input->TriggerKey(DIK_SPACE))
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
             {
                 scene_ = Clear;
             }
+#endif
             break;
 
         default:
@@ -163,13 +194,17 @@ void gameScene::Draw()
             batModel_->Draw(
                 batWorldTransform_, gameCamera_->GetCamera());
 
-            chickModel_->Draw(
-                chickWorldTransform_, gameCamera_->GetCamera());
-
             Model::PostDraw();
             break;
 
         case gameScene::FlappyBird:
+            // Chickモデルを描画
+            Model::PreDraw();
+
+            chickModel_->Draw(
+                chickWorldTransform_, gameCamera_->GetCamera());
+
+            Model::PostDraw();
             break;
 
         case gameScene::Western:

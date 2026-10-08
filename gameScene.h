@@ -1,4 +1,3 @@
-
 #pragma once
 #include "KamataEngine.h"
 #include "Camera.h"
@@ -48,6 +47,15 @@ class gameScene
     // ヒヨコ
     KamataEngine::Model* chickModel_ = nullptr;
     KamataEngine::WorldTransform chickWorldTransform_;
+
+    // ヒヨコのジャンプ処理
+    float chickVelocityY_ = 0.0f;
+
+    // ジャンプ時の上昇速度
+    static constexpr float kChickJumpPower = 0.3f;
+
+    // 重力
+    static constexpr float kChickGravity = 0.01f;
 
 public:
     ~gameScene();
