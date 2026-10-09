@@ -48,6 +48,22 @@ class gameScene
     KamataEngine::Model* chickModel_ = nullptr;
     KamataEngine::WorldTransform chickWorldTransform_;
 
+    // FlappyBird用のDokannモデル
+    KamataEngine::Model* dokannModel_ = nullptr;
+    KamataEngine::WorldTransform dokannWorldTransform_;
+
+    // 上側のDokann用ワールドトランスフォーム
+    KamataEngine::WorldTransform dokannUpperWorldTransform_;
+
+    // Dokannの移動速度
+    static constexpr float kDokannMoveSpeed = 0.1f;
+
+    // Dokannが左側に消えたと判定するX座標
+    static constexpr float kDokannLeftLimit = -10.0f;
+
+    // Dokannを右側に戻すX座標
+    static constexpr float kDokannStartX = 10.0f;
+
     // Western用のGanモデル
     KamataEngine::Model* ganModel_ = nullptr;
     KamataEngine::WorldTransform ganWorldTransform_;
@@ -60,6 +76,19 @@ class gameScene
 
     // 重力
     static constexpr float kChickGravity = 0.01f;
+
+    // Chickの当たり判定用サイズ（半幅・半高さ）
+    static constexpr float kChickHalfWidth = 1.05f;
+    static constexpr float kChickHalfHeight = 1.3f;
+
+    // Dokannの当たり判定用サイズ（半幅）
+    static constexpr float kDokannHalfWidth = 1.75f;
+
+    // Dokannの当たり判定用サイズ（高さ）
+    static constexpr float kDokannHeight = 8.86f;
+
+    // ChickがDokannに衝突したか
+    bool isChickHit_ = false;
 
 public:
     ~gameScene();
