@@ -81,7 +81,8 @@ StyleCopReport.xml
 !Resources/bat/bat.obj
 !Resources/Chick/Chick.obj
 !Resources/BatterBox/BatterBox.obj
-!Resources/Gan/Gan.obj
+!Resources/Dokann/Dokann.obj
+!Resources/ganSAA/ganSAA.obj
 *.iobj
 *.pch
 *.pdb
