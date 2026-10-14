@@ -44,18 +44,7 @@ void gameScene::Intialize() {
     // カメラの初期化
     gameCamera_ = new GameCamera();
     gameCamera_->Initialize();
-
-    // 野球ボールモデル
-    baseballModel_ = Model::CreateFromOBJ("baseboll");
-    baseballWorldTransform_.Initialize();
-
-    // バットモデル
-    batModel_ = Model::CreateFromOBJ("bat");
-    batWorldTransform_.Initialize();
-
-    // ヒヨコモデル
-    chickModel_ = Model::CreateFromOBJ("Chick");
-    chickWorldTransform_.Initialize();
+   
 }
 
 void gameScene::Update()
