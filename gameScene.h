@@ -1,29 +1,32 @@
-#pragma once	
+
+#pragma once
 #include "KamataEngine.h"
 #include "Camera.h"
 
-using namespace KamataEngine;
 class baseBall;
-class gameScene{
-	enum GameScene
-	{ 
-		basebool,
-		FlappyBird,
-		Western,
-		RockBreaker,
-		RunningFromThtPolice,
-	};
 
-	// 大きなシーン
-	enum Scene
-	{
-		Title,
-		Game,
-		Clear,
-	};
+class gameScene
+{
+    // 大きなシーン
+    enum Scene
+    {
+        Title,
+        Game,
+        Clear,
+    };
 
-	// 現在のシーン
-	Scene scene_ = Title;
+    // ミニゲーム
+    enum GameScene
+    {
+        basebool,
+        FlappyBird,
+        Western,
+        RockBreaker,
+        RunningFromThtPolice,
+    };
+
+    // 現在のシーン
+    Scene scene_ = Title;
 
 	// 現在のミニゲーム
 	
@@ -33,8 +36,8 @@ class gameScene{
 	
 public:
 	~gameScene();
+
 	void Intialize();
 	void Update();
 	void Draw();
 };
-

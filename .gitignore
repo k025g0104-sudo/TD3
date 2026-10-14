@@ -76,6 +76,11 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+# Resources内の3DモデルOBJはGit管理する
+!Resources/baseboll/baseboll.obj
+!Resources/bat/bat.obj
+!Resources/Chick/Chick.obj
+!Resources/BatterBox/BatterBox.obj
 *.iobj
 *.pch
 *.pdb
