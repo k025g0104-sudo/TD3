@@ -34,14 +34,9 @@ static const char* TitleScene(int scene) {
 
 gameScene::~gameScene() {
 	delete baseBall_;
-	delete gameCamera_;
-gameScene::~gameScene()
-{
-    delete baseBall_;
+	delete gameCamera_;    
     delete flappyBirdGame_;
-    delete gameBackground_;
-    delete gameCamera_;
-
+    delete gameBackground_;    
     delete baseballModel_;
     delete batModel_; 
     delete ganModel_;
@@ -298,18 +293,15 @@ void gameScene::Draw()
         switch (ganeScene_)
         {
         case gameScene::basebool:
-            // チームメンバーの野球ゲーム描画
-            baseBall_->Draw(gameCamera_->GetCamera());
+           
 
             // 3Dモデル描画
             Model::PreDraw();
+            // チームメンバーの野球ゲーム描画
+            baseBall_->Draw(gameCamera_->GetCamera());
 
-            baseballModel_->Draw(
-                baseballWorldTransform_, gameCamera_->GetCamera());
-
-            batModel_->Draw(
-                batWorldTransform_, gameCamera_->GetCamera());
-
+            /*baseballModel_->Draw(
+                baseballWorldTransform_, gameCamera_->GetCamera());          */
             Model::PostDraw();
             break;
 

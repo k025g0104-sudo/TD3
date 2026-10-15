@@ -72,7 +72,7 @@ private:
 	static constexpr int kTravelBeats = 4;
 	static constexpr float kPitchDistance = 50.0f;
 
-	static constexpr int kPitchInterval = static_cast<int>(kFramesPerBeat);
+	static constexpr int kPitchInterval = static_cast<int>(kFramesPerBeat*2);
 	static constexpr float kPitchSpeed = kPitchDistance / (kFramesPerBeat * kTravelBeats);
 
 	static inline int kSwingFrame = 20;
