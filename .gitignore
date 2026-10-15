@@ -86,6 +86,7 @@ StyleCopReport.xml
 !Resources/Sky/Sky.obj
 !Resources/Yuka/Yuka.obj
 !Resources/ring/ring.obj
+!Resources/ganMan/ganMan.obj
 *.iobj
 *.pch
 *.pdb
