@@ -57,7 +57,7 @@ class gameScene
 	ganbattle* ganbattle_ = nullptr;
 
 public:
-    ~gameScene();
+	~gameScene();
 
     void Intialize();
     void Update();
