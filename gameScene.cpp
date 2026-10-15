@@ -10,22 +10,22 @@ using namespace KamataEngine;
 
 static const char* SceneName(int s)
 {
-    switch (s)
-    {
-    case 0: return "basebool";
-    case 1: return "FlappyBird";
-    case 2: return "Western";
-    case 3: return "RockBreaker";
-    case 4: return "RunningFromThtPolice";
-    default: return "Unknown";
-    }
+	switch (s)
+	{
+	case 0: return "basebool";
+	case 1: return "FlappyBird";
+	case 2: return "Western";
+	case 3: return "RockBreaker";
+	case 4: return "RunningFromThtPolice";
+	default: return "Unknown";
+	}
 }
 
 static const char* TitleScene(int scene) {
 	switch (scene) {
 	case 0: return "Title";
 	case 1: return "Game";
-	case 2: return "Clear";	
+	case 2: return "Clear";
 	default:return "Unknown";
 	}
 }
@@ -41,15 +41,19 @@ void gameScene::Intialize() {
 	baseBall_ = new baseBall();
 	baseBall_->Initialize();
 
-    // カメラの初期化
-    gameCamera_ = new GameCamera();
-    gameCamera_->Initialize();
-   
+	// カメラの初期化
+	gameCamera_ = new GameCamera();
+	gameCamera_->Initialize();
+
+	gameCamera_->SetTarget({ 0.0f,2.0f,0.0f });
+	gameCamera_->SetDistance(25.0f);
+	gameCamera_->SetAngle(0.15f, 0.0f);
+
 }
 
 void gameScene::Update()
 {
-    Input* input = Input::GetInstance();
+	Input* input = Input::GetInstance();
 
 	gameCamera_->Update();
 	switch (scene_)
@@ -60,7 +64,7 @@ void gameScene::Update()
 			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
 		}
 		break;
-	case gameScene::Game:		
+	case gameScene::Game:
 		if (input->TriggerKey(DIK_RETURN)) {
 			scene_ = Clear;
 			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
@@ -68,7 +72,7 @@ void gameScene::Update()
 		switch (ganeScene_)
 		{
 		case gameScene::basebool:
-			baseBall_->Update();
+			 baseBall_->Update();
 			if (input->TriggerKey(DIK_SPACE)) {
 				ganeScene_ = FlappyBird;
 				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));

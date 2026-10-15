@@ -3,7 +3,6 @@
 #include <cmath>
 using namespace KamataEngine;
 
-// scale / rotation から行列を作る(平行移動なし)
 static Matrix4x4 MakeRotScale(const WorldTransform& wt) {
 	const Vector3& s = wt.scale_;
 	const Vector3& r = wt.rotation_;
@@ -38,7 +37,6 @@ static void UpdateWorld(WorldTransform& wt) {
 	wt.TransferMatrix();
 }
 
-// バット用:構えの姿勢のあとに、世界のY軸まわりでスイング角を掛ける
 static void UpdateBatWorld(WorldTransform& wt, float swingAngle) {
 	Matrix4x4 base = MakeRotScale(wt);
 
@@ -51,7 +49,6 @@ static void UpdateBatWorld(WorldTransform& wt, float swingAngle) {
 	ry.m[2][2] = c;
 	ry.m[3][3] = 1.0f;
 
-	// m = base * ry
 	Matrix4x4 m = {};
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
@@ -67,21 +64,23 @@ static void UpdateBatWorld(WorldTransform& wt, float swingAngle) {
 	wt.matWorld_ = m;
 	wt.TransferMatrix();
 }
-baseBall::baseBall() {};
+
+baseBall::baseBall() {}
 
 baseBall::~baseBall() {
 	delete model_;
 	delete baseballModel_;
 	delete batModel_;
+	delete ringModel_;
 }
 
 void baseBall::Initialize() {
-	// バッターbox君
+	// バッターbox
 	model_ = Model::CreateFromOBJ("BatterBox", true);
 	worldTransform_.Initialize();
 	worldTransform_.rotation_.y = -89.5f;
 	worldTransform_.translation_.x = -1.5f;
-	worldTransform_.translation_.z = 50;
+	worldTransform_.translation_.z = 50.0f;
 
 	// 野球ボール
 	baseballModel_ = Model::CreateFromOBJ("baseboll", true);
@@ -94,9 +93,47 @@ void baseBall::Initialize() {
 	// バット
 	batModel_ = Model::CreateFromOBJ("bat", true);
 	batWorldTransform_.Initialize();
-	batWorldTransform_.translation_ = { -30.0f, 1.0f, 0.0f };
+	batWorldTransform_.translation_ = { -7.0f, 1.0f, 0.0f };
 	batWorldTransform_.rotation_.y = kBatStartAngle;
 	batWorldTransform_.rotation_.z = -1.5f;
+
+	lastJudge_ = Judge::None;
+	combo_ = 0;
+	score_ = 0;
+
+	// --- リング用3Dモデルの初期化 ---
+	// Modelsフォルダ内に "ring.obj" が配置されている前提です
+	ringModel_ = Model::CreateFromOBJ("ring", true);
+
+	const Vector3 hitPosition = { kTargetWorldX, kTargetWorldY, batWorldTransform_.translation_.z };
+
+	const Vector3 ringRotation = { 0.0f,1.5f,0.0f };
+
+	// ターゲットリング（打点位置に配置）
+	targetRingTransform_.Initialize();
+	targetRingTransform_.translation_ = hitPosition;
+	targetRingTransform_.scale_ = { 1.0f, 1.0f, 1.0f };
+	targetRingTransform_.rotation_ = ringRotation;
+
+	// 縮んでくるリング
+	for (int i = 0; i < kMaxBalls; ++i) {
+		approachRingTransforms_[i].Initialize();
+		approachRingTransforms_[i].translation_ = hitPosition;
+		approachRingTransforms_[i].scale_ = { kApproachStartScale, kApproachStartScale, kApproachStartScale };
+
+		approachRingTransforms_[i].rotation_ = ringRotation;
+
+		approachRingActive_[i] = false;
+	}
+
+	// 判定用演出リング
+	flashRingTransform_.Initialize();
+	flashRingTransform_.translation_ = hitPosition;
+	flashRingTransform_.scale_ = { 1.0f, 1.0f, 1.0f };
+	flashRingTransform_.rotation_ = ringRotation;
+	flashRingActive_ = false;
+
+	flashTimer_ = 0;
 }
 
 void baseBall::SpawnBall() {
@@ -107,8 +144,9 @@ void baseBall::SpawnBall() {
 		ball.active = true;
 		ball.state = BallState::Pitched;
 		ball.timer = 0;
-		ball.velocity = { 0.0f,0.0f,-kPitchSpeed };
-		ball.worldTrnasform.translation_ = { 0.0f,2.0f,50.0f };
+		ball.judged = false;
+		ball.velocity = { 0.0f, 0.0f, -kPitchSpeed };
+		ball.worldTrnasform.translation_ = { 0.0f, 2.0f, 50.0f };
 		return;
 	}
 }
@@ -125,13 +163,45 @@ void baseBall::UpdateBat() {
 		swingTimer_++;
 		float t = static_cast<float>(swingTimer_) / kSwingFrame;
 		t = (std::min)(t, 1.0f);
-		swingAngle_ = (kBatendAngle - kBatStartAngle) * t; // 0 → -3.0
+		swingAngle_ = (kBatendAngle - kBatStartAngle) * t;
 
 		if (swingTimer_ >= kSwingFrame) {
 			isSwinging_ = false;
-			swingAngle_ = 0.0f; 
+			swingAngle_ = 0.0f;
 		}
 	}
+}
+
+baseBall::Judge baseBall::JudgeTiming() {
+	if (!isSwinging_) {
+		return Judge::Miss;
+	}
+	int diff = std::abs(swingTimer_ - kContactFrame);
+	if (diff <= kPerfectRange) return Judge::Perfect;
+	if (diff <= kGreatRange)   return Judge::Great;
+	if (diff <= kGoodRange)    return Judge::Good;
+	return Judge::Miss;
+}
+
+void baseBall::ApplyJudge(Judge judge) {
+	lastJudge_ = judge;
+	flashTimer_ = kFlashFrame;
+	flashRingActive_ = true;
+
+	if (judge == Judge::Miss) {
+		combo_ = 0;
+		return;
+	}
+
+	combo_++;
+	int base = 0;
+	switch (judge) {
+	case Judge::Perfect: base = 300; break;
+	case Judge::Great:   base = 200; break;
+	case Judge::Good:    base = 100; break;
+	default: break;
+	}
+	score_ += base + combo_ * 10;
 }
 
 void baseBall::UpdateBall() {
@@ -139,7 +209,6 @@ void baseBall::UpdateBall() {
 		spawnTimer_ = 0;
 		SpawnBall();
 	}
-	bool swingActive = isSwinging_ && swingTimer_ >= kHitStartFrame && swingTimer_ <= kHitEndFrame;
 
 	for (Ball& ball : balls_) {
 		if (!ball.active) {
@@ -148,18 +217,35 @@ void baseBall::UpdateBall() {
 
 		Vector3& pos = ball.worldTrnasform.translation_;
 
-		switch (ball.state)
-		{
+		switch (ball.state) {
 		case BallState::Pitched: {
 			pos.x += ball.velocity.x;
 			pos.y += ball.velocity.y;
 			pos.z += ball.velocity.z;
 
-			float dz = pos.z - batWorldTransform_.translation_.z;
-			if (swingActive && std::abs(dz) < kHitRange) {
-				ball.state = BallState::Hit;
-				ball.timer = 0;
-				ball.velocity = { 0.05f,0.4f,1.5f };
+			if (!ball.judged && pos.z <= batWorldTransform_.translation_.z) {
+				ball.judged = true;
+
+				Judge judge = JudgeTiming();
+				ApplyJudge(judge);
+
+				if (judge != Judge::Miss) {
+					ball.state = BallState::Hit;
+					ball.timer = 0;
+					switch (judge) {
+					case baseBall::Judge::Perfect:
+						ball.velocity = { 0.05f, 0.60f, 2.0f };
+						break;
+					case baseBall::Judge::Great:
+						ball.velocity = { 0.05f, 0.45f, 1.5f };
+						break;
+					case baseBall::Judge::Good:
+						ball.velocity = { 0.05f, 0.20f, 0.8f };
+						break;
+					default:
+						break;
+					}
+				}
 			}
 			else if (pos.z < -5.0f) {
 				ball.active = false;
@@ -172,29 +258,74 @@ void baseBall::UpdateBall() {
 			pos.y += ball.velocity.y;
 			pos.z += ball.velocity.z;
 
-			if (pos.y < 0.0f || ++ball.timer>600) {
+			if (pos.y < 0.0f || ++ball.timer > 600) {
 				ball.active = false;
 			}
 			break;
 		}
-
 	}
 }
 
+// 縮小リング・判定演出の更新
+void baseBall::UpdateTimingUI() {
+	for (int i = 0; i < kMaxBalls; i++) {
+		const Ball& ball = balls_[i];
+		WorldTransform& ringTransform = approachRingTransforms_[i];
+
+		if (!ball.active || ball.state != BallState::Pitched) {
+			approachRingActive_[i] = false;
+			continue;
+		}
+
+		float framesToArrive =
+			(ball.worldTrnasform.translation_.z - batWorldTransform_.translation_.z) / kPitchSpeed;
+		float framesUntilPress = framesToArrive - static_cast<float>(kContactFrame);
+
+		if (framesUntilPress > kApproachFrame) {
+			approachRingActive_[i] = false;
+			continue;
+		}
+
+		approachRingActive_[i] = true;
+
+		// スケールの計算 (1.0倍を基準にアプローチ割合に応じて縮小)
+		float scale = 1.0f + (framesUntilPress / kApproachFrame) * (kApproachStartScale - 1.0f);
+		scale = (std::max)(scale, 0.5f);
+
+		ringTransform.scale_ = { scale, scale, scale };
+		UpdateWorld(ringTransform);
+	}
+
+	// 判定演出（広がって消えるリング）
+	if (flashTimer_ > 0) {
+		flashTimer_--;
+		float a = static_cast<float>(flashTimer_) / kFlashFrame;
+		float scale = 1.0f + 0.8f * (1.0f - a);
+
+		flashRingTransform_.scale_ = { scale, scale, scale };
+		UpdateWorld(flashRingTransform_);
+	}
+	else {
+		flashRingActive_ = false;
+	}
+
+	UpdateWorld(targetRingTransform_);
+}
+
 void baseBall::Update() {
-
-
 	UpdateBat();
 	UpdateBall();
 
 	UpdateWorld(worldTransform_);
-	UpdateBatWorld(batWorldTransform_, swingAngle_); 
+	UpdateBatWorld(batWorldTransform_, swingAngle_);
 
 	for (Ball& ball : balls_) {
 		if (ball.active) {
 			UpdateWorld(ball.worldTrnasform);
 		}
 	}
+
+	UpdateTimingUI();
 }
 
 void baseBall::Draw(const Camera& camera) {
@@ -206,6 +337,22 @@ void baseBall::Draw(const Camera& camera) {
 		if (ball.active) {
 			baseballModel_->Draw(ball.worldTrnasform, camera);
 		}
+	}
+
+	// --- 3Dリングモデルの描画 ---
+	// ターゲットリング（常に描画）
+	ringModel_->Draw(targetRingTransform_, camera);
+
+	// 近づくリング
+	for (int i = 0; i < kMaxBalls; ++i) {
+		if (approachRingActive_[i]) {
+			ringModel_->Draw(approachRingTransforms_[i], camera);
+		}
+	}
+
+	// フラッシュリング
+	if (flashRingActive_) {
+		ringModel_->Draw(flashRingTransform_, camera);
 	}
 
 	Model::PostDraw();
