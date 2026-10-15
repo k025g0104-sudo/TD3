@@ -18,7 +18,7 @@ void FlappyBirdGame::UpdateChickMatrix()
 {
     // Chickの回転行列を作成
     Matrix4x4 rotateMatrix =
-        MathUtility::MakeRotateYMatrix(chickWorldTransform_.rotation_.y);
+       MathUtility::MakeRotateYMatrix(chickWorldTransform_.rotation_.y);
 
     // Chickの移動行列を作成
     Matrix4x4 translateMatrix =
