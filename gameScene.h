@@ -5,6 +5,7 @@
 class baseBall;
 class FlappyBirdGame;
 class GameBackground;
+class ganbattle;
 
 class gameScene
 {
@@ -52,9 +53,8 @@ class gameScene
     KamataEngine::Model* batModel_ = nullptr;
     KamataEngine::WorldTransform batWorldTransform_;
 
-    // Western用のGanモデル
-    KamataEngine::Model* ganModel_ = nullptr;
-    KamataEngine::WorldTransform ganWorldTransform_;
+	// Western(早打ちゲーム)
+	ganbattle* ganbattle_ = nullptr;
 
 public:
 	~gameScene();
