@@ -5,7 +5,8 @@
 using namespace KamataEngine;
 
 // Windowsアプリでのエントリーポイント(main関数)
-int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {	
+int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) 
+{
 	KamataEngine::Initialize(L"TD3");
 
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
@@ -13,8 +14,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	gameScene* scene = new gameScene();
 	scene->Intialize();
 	
-	while (true) {		
-		if (KamataEngine::Update()) {
+	while (true) 
+	{		
+		if (KamataEngine::Update()) 
+		{
 			break;
 		}
 
