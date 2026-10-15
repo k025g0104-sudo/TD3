@@ -57,7 +57,7 @@ class gameScene
     KamataEngine::WorldTransform ganWorldTransform_;
 
 public:
-    ~gameScene();
+	~gameScene();
 
     void Intialize();
     void Update();
