@@ -1,64 +1,227 @@
 #include "gameScene.h"
 #include "KamataEngine.h"
-#pragma comment(lib,"dinput8.lib")
-#pragma comment(lib,"dxguid.lib")
+#include "baseBall.h"
+#include "FlappyBird.h"
 
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 
 using namespace KamataEngine;
 
-void gameScene::Intialize() {}
-void gameScene::Update() {
-	Input* input = Input::GetInstance();
-	switch (ganeScene_)
-	{
-	case gameScene::basebool:
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = FlappyBird;
-		}
-		break;
-	case gameScene::FlappyBird:
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = Western;
-		}
-		break;
-	case gameScene::Western:
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = RockBreaker;
-		}
-		break;
-	case gameScene::RockBreaker:
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = RunningFromThtPolice;
-		}
-		break;
-	case gameScene::RunningFromThtPolice:
-		if (input->TriggerKey(DIK_SPACE)) {
-			ganeScene_ = basebool;
-		}
-		break;
-	default:
-		break;
-	}
+static const char* SceneName(int s)
+{
+    switch (s)
+    {
+    case 0: return "basebool";
+    case 1: return "FlappyBird";
+    case 2: return "Western";
+    case 3: return "RockBreaker";
+    case 4: return "RunningFromThtPolice";
+    default: return "Unknown";
+    }
 }
-void gameScene::Draw() {
-	switch (ganeScene_)
-	{
-	case gameScene::basebool:
-		printf("basebool\n");
-		break;
-	case gameScene::FlappyBird:
-		printf("FlappyBird\n");
-		break;
-	case gameScene::Western:
-		printf("Western\n");
-		break;
-	case gameScene::RockBreaker:
-		printf("RockBreaker\n");	
-		break;
-	case gameScene::RunningFromThtPolice:
-		printf("RunningFromThtPolice\n");
-		break;
-	default:
-		break;
-	}
+
+gameScene::~gameScene()
+{
+    delete baseBall_;
+    delete flappyBirdGame_;
+    delete gameCamera_;
+
+    delete baseballModel_;
+    delete batModel_; 
+    delete ganModel_;
+}
+
+void gameScene::Intialize()
+{
+    // 野球ゲームの初期化
+    baseBall_ = new baseBall();
+    baseBall_->Initialize();
+
+    // FlappyBirdの初期化
+    flappyBirdGame_ = new FlappyBirdGame();
+    flappyBirdGame_->Initialize();
+
+    // カメラの初期化
+    gameCamera_ = new GameCamera();
+    gameCamera_->Initialize();
+
+    // 野球ボールモデル
+    baseballModel_ = Model::CreateFromOBJ("baseboll");
+    baseballWorldTransform_.Initialize();
+
+    // バットモデル
+    batModel_ = Model::CreateFromOBJ("bat");
+    batWorldTransform_.Initialize();
+
+    // Ganモデルを読み込む
+    ganModel_ = Model::CreateFromOBJ("ganSAA");
+
+    // Ganのワールドトランスフォームを初期化
+    ganWorldTransform_.Initialize();
+
+}
+
+void gameScene::Update()
+{
+    Input* input = Input::GetInstance();
+
+    // カメラ更新
+    gameCamera_->Update();
+
+    switch (scene_)
+    {
+    case Title:
+        // タイトルからゲームへ
+        if (input->TriggerKey(DIK_SPACE))
+        {
+            scene_ = Game;
+        }
+
+        break;
+
+    case Game:
+        // ミニゲームの切り替え
+        switch (ganeScene_)
+        {
+        case gameScene::basebool:
+            baseBall_->Update();
+
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
+            {
+                ganeScene_ = FlappyBird;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+#endif
+            break;
+
+        case gameScene::FlappyBird:
+        {
+            // FlappyBirdの更新
+            flappyBirdGame_->Update();
+
+#ifdef _DEBUG
+            // デバッグ用シーン切り替え
+            if (input->TriggerKey(DIK_LSHIFT))
+            {
+                ganeScene_ = Western;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+#endif
+
+            break;
+        }
+        case gameScene::Western:
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
+            {
+                ganeScene_ = RockBreaker;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+#endif
+            break;
+
+        case gameScene::RockBreaker:
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
+            {
+                ganeScene_ = RunningFromThtPolice;
+                DebugText::GetInstance()->ConsolePrintf(
+                    "Scene->%s\n", SceneName(ganeScene_));
+            }
+#endif
+            break;
+
+        case gameScene::RunningFromThtPolice:
+#ifdef _DEBUG
+            if (input->TriggerKey(DIK_LSHIFT))
+            {
+                scene_ = Clear;
+            }
+#endif
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    case Clear:
+        // クリアからタイトルへ
+        if (input->TriggerKey(DIK_SPACE))
+        {
+            scene_ = Title;
+            ganeScene_ = basebool;
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+void gameScene::Draw()
+{
+    switch (scene_)
+    {
+    case Title:
+        // タイトル画面（今後実装）
+        break;
+
+    case Game:
+        switch (ganeScene_)
+        {
+        case gameScene::basebool:
+            // チームメンバーの野球ゲーム描画
+            baseBall_->Draw(gameCamera_->GetCamera());
+
+            // 3Dモデル描画
+            Model::PreDraw();
+
+            baseballModel_->Draw(
+                baseballWorldTransform_, gameCamera_->GetCamera());
+
+            batModel_->Draw(
+                batWorldTransform_, gameCamera_->GetCamera());
+
+            Model::PostDraw();
+            break;
+
+        case gameScene::FlappyBird:
+            // FlappyBirdの描画
+            flappyBirdGame_->Draw(gameCamera_->GetCamera());
+            break;
+
+        case gameScene::Western:
+            // Ganモデルを描画
+            Model::PreDraw();
+
+            ganModel_->Draw(
+                ganWorldTransform_, gameCamera_->GetCamera());
+
+            Model::PostDraw();
+            break;
+
+        case gameScene::RockBreaker:
+            break;
+
+        case gameScene::RunningFromThtPolice:
+            break;
+
+        default:
+            break;
+        }
+        break;
+
+    case Clear:
+        // クリア画面（今後実装）
+        break;
+
+    default:
+        break;
+    }
 }
