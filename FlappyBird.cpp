@@ -32,6 +32,12 @@ void FlappyBirdGame::UpdateChickMatrix()
     chickWorldTransform_.TransferMatrix();
 }
 
+// 地面の上面の高さを設定
+void FlappyBirdGame::SetGroundHeight(float height)
+{
+    groundHeight_ = height;
+}
+
 // 初期化
 void FlappyBirdGame::Initialize()
 {
@@ -130,6 +136,35 @@ void FlappyBirdGame::Update()
 
     // 上下方向の位置を更新
     chickWorldTransform_.translation_.y += chickVelocityY_;
+
+    // Chickの当たり判定の中心Y座標
+    float chickCenterY = chickWorldTransform_.translation_.y + 4.3f;
+
+    // Chickの足元のY座標
+    float chickBottomY = chickCenterY - kChickHalfHeight;
+
+    // 地面に接触したか判定
+    if (chickBottomY <= groundHeight_)
+    {
+        // 地面より下にめり込まないよう位置を補正
+        chickWorldTransform_.translation_.y =
+            groundHeight_ + kChickHalfHeight - 4.3f;
+
+        // 落下速度を停止
+        chickVelocityY_ = 0.0f;
+
+        // ゲームオーバー状態にする
+        isChickHit_ = true;
+
+        // デバッグ出力
+        DebugText::GetInstance()->ConsolePrintf(
+            "Chick Hit Ground!\n");
+
+        // Chickの行列を更新
+        UpdateChickMatrix();
+
+        return;
+    }
 
     // Chickの行列を更新
     UpdateChickMatrix();

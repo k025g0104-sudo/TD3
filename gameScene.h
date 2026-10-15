@@ -4,6 +4,7 @@
 
 class baseBall;
 class FlappyBirdGame;
+class GameBackground;
 
 class gameScene
 {
@@ -36,6 +37,9 @@ class gameScene
 
     // FlappyBird
     FlappyBirdGame* flappyBirdGame_ = nullptr;
+
+    // 共通背景
+    GameBackground* gameBackground_ = nullptr;
 
     // カメラ
     GameCamera* gameCamera_ = nullptr;

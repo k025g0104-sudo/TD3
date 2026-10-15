@@ -2,6 +2,7 @@
 #include "KamataEngine.h"
 #include "baseBall.h"
 #include "FlappyBird.h"
+#include "GameBackground.h"
 
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -25,6 +26,7 @@ gameScene::~gameScene()
 {
     delete baseBall_;
     delete flappyBirdGame_;
+    delete gameBackground_;
     delete gameCamera_;
 
     delete baseballModel_;
@@ -45,6 +47,10 @@ void gameScene::Intialize()
     // カメラの初期化
     gameCamera_ = new GameCamera();
     gameCamera_->Initialize();
+
+    // 共通背景の初期化
+    gameBackground_ = new GameBackground();
+    gameBackground_->Initialize();
 
     // 野球ボールモデル
     baseballModel_ = Model::CreateFromOBJ("baseboll");
@@ -81,6 +87,42 @@ void gameScene::Update()
         break;
 
     case Game:
+        // ミニゲームごとに地面の位置を設定
+        switch (ganeScene_)
+        {
+        case gameScene::basebool:
+            gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
+            break;
+
+        case gameScene::FlappyBird:
+        {
+            // FlappyBird用の地面の高さ
+            const float groundY = -10.0f;
+
+            // 地面の位置を設定
+            gameBackground_->SetYukaPosition({ 0.0f, groundY, 0.0f });
+
+            // Chickの接触判定に地面の高さを渡す
+            flappyBirdGame_->SetGroundHeight(groundY);
+            break;
+        }
+
+        case gameScene::Western:
+            gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
+            break;
+
+        case gameScene::RockBreaker:
+            gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
+            break;
+
+        case gameScene::RunningFromThtPolice:
+            gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
+            break;
+
+        default:
+            break;
+        }
+
         // ミニゲームの切り替え
         switch (ganeScene_)
         {
@@ -173,6 +215,10 @@ void gameScene::Draw()
         break;
 
     case Game:
+        // 全ミニゲーム共通の背景を描画
+        gameBackground_->Draw(gameCamera_->GetCamera());
+
+        // 各ミニゲームの描画
         switch (ganeScene_)
         {
         case gameScene::basebool:
