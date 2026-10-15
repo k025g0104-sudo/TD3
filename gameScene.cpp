@@ -11,34 +11,41 @@ using namespace KamataEngine;
 
 static const char* SceneName(int s)
 {
-    switch (s)
-    {
-    case 0: return "basebool";
-    case 1: return "FlappyBird";
-    case 2: return "Western";
-    case 3: return "RockBreaker";
-    case 4: return "RunningFromThtPolice";
-    default: return "Unknown";
-    }
+	switch (s)
+	{
+	case 0: return "basebool";
+	case 1: return "FlappyBird";
+	case 2: return "Western";
+	case 3: return "RockBreaker";
+	case 4: return "RunningFromThtPolice";
+	default: return "Unknown";
+	}
 }
 
-gameScene::~gameScene()
-{
-    delete baseBall_;
-    delete flappyBirdGame_;
-    delete gameBackground_;
-    delete gameCamera_;
+static const char* TitleScene(int scene) {
+	switch (scene) {
+	case 0: return "Title";
+	case 1: return "Game";
+	case 2: return "Clear";
+	default:return "Unknown";
+	}
+}
 
+
+gameScene::~gameScene() {
+	delete baseBall_;
+	delete gameCamera_;    
+    delete flappyBirdGame_;
+    delete gameBackground_;    
     delete baseballModel_;
     delete batModel_; 
     delete ganModel_;
 }
 
-void gameScene::Intialize()
-{
-    // 野球ゲームの初期化
-    baseBall_ = new baseBall();
-    baseBall_->Initialize();
+
+void gameScene::Intialize() {
+	baseBall_ = new baseBall();
+	baseBall_->Initialize();
 
     // FlappyBirdの初期化
     flappyBirdGame_ = new FlappyBirdGame();
@@ -70,7 +77,71 @@ void gameScene::Intialize()
 
 void gameScene::Update()
 {
-    Input* input = Input::GetInstance();
+	Input* input = Input::GetInstance();
+
+	gameCamera_->Update();
+	switch (scene_)
+	{
+	case gameScene::Title:
+		if (input->TriggerKey(DIK_RETURN)) {
+			scene_ = Game;
+			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
+		}
+		break;
+	case gameScene::Game:
+		if (input->TriggerKey(DIK_RETURN)) {
+			scene_ = Clear;
+			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
+		}
+		switch (ganeScene_)
+		{
+		case gameScene::basebool:
+			 baseBall_->Update();
+			if (input->TriggerKey(DIK_SPACE)) {
+				ganeScene_ = FlappyBird;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::FlappyBird:
+			if (input->TriggerKey(DIK_SPACE))
+			{
+				ganeScene_ = Western;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::Western:
+			if (input->TriggerKey(DIK_SPACE))
+			{
+				ganeScene_ = RockBreaker;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::RockBreaker:
+			if (input->TriggerKey(DIK_SPACE))
+			{
+				ganeScene_ = RunningFromThtPolice;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		case gameScene::RunningFromThtPolice:
+			if (input->TriggerKey(DIK_SPACE)) {
+				ganeScene_ = basebool;
+				DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", SceneName(ganeScene_));
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	case gameScene::Clear:
+		if (input->TriggerKey(DIK_RETURN)) {
+			scene_ = Title;
+			DebugText::GetInstance()->ConsolePrintf("Scene->%s\n", TitleScene(scene_));
+		}
+		break;
+	default:
+		break;
+	}
 
     // カメラ更新
     gameCamera_->Update();
@@ -222,18 +293,15 @@ void gameScene::Draw()
         switch (ganeScene_)
         {
         case gameScene::basebool:
-            // チームメンバーの野球ゲーム描画
-            baseBall_->Draw(gameCamera_->GetCamera());
+           
 
             // 3Dモデル描画
             Model::PreDraw();
+            // チームメンバーの野球ゲーム描画
+            baseBall_->Draw(gameCamera_->GetCamera());
 
-            baseballModel_->Draw(
-                baseballWorldTransform_, gameCamera_->GetCamera());
-
-            batModel_->Draw(
-                batWorldTransform_, gameCamera_->GetCamera());
-
+            /*baseballModel_->Draw(
+                baseballWorldTransform_, gameCamera_->GetCamera());          */
             Model::PostDraw();
             break;
 
