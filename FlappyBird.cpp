@@ -1,5 +1,6 @@
 #include "FlappyBird.h"
 #include "KamataEngine.h"
+#include <random>
 
 using namespace KamataEngine;
 
@@ -125,8 +126,9 @@ void FlappyBirdGame::Update()
         return;
     }
 
-    // Spaceキーを押した瞬間に上向きの速度を与える
-    if (input->TriggerKey(DIK_SPACE))
+    // SpaceキーまたはZキーを押した瞬間に上向きの速度を与える
+    if (input->TriggerKey(DIK_SPACE) ||
+        input->TriggerKey(DIK_Z))
     {
         chickVelocityY_ = kChickJumpPower;
     }
@@ -179,8 +181,21 @@ void FlappyBirdGame::Update()
     // 左端まで移動したら右側へ戻す
     if (dokannWorldTransform_.translation_.x < kDokannLeftLimit)
     {
+        // 土管のX座標を初期位置に戻す
         dokannWorldTransform_.translation_.x = kDokannStartX;
         dokannUpperWorldTransform_.translation_.x = kDokannStartX;
+
+        // 乱数生成器を用意（初回のみ初期化）
+        static std::mt19937 randomEngine(std::random_device{}());
+
+        // 上下に移動する量をランダムに決める
+        static std::uniform_real_distribution<float> randomOffset(-3.0f, 3.0f);
+
+        float offsetY = randomOffset(randomEngine);
+
+        // 上下の土管の間隔を保ちながら移動
+        dokannWorldTransform_.translation_.y = -12.0f + offsetY;
+        dokannUpperWorldTransform_.translation_.y = 14.0f + offsetY;
     }
 
     // 下側のDokannの行列を更新
