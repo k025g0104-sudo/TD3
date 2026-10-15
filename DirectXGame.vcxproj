@@ -181,12 +181,16 @@ xcopy "$(ProjectDir)..\External\KamataEngine\shaders" "$(ProjectDir)Resources\En
   <ItemGroup>
     <ClCompile Include="baseBall.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="FlappyBird.cpp" />
+    <ClCompile Include="GameBackground.cpp" />
     <ClCompile Include="gameScene.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="baseBall.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="FlappyBird.h" />
+    <ClInclude Include="GameBackground.h" />
     <ClInclude Include="gameScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
