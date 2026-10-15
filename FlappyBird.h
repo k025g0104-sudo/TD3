@@ -18,6 +18,9 @@ public:
     // 描画
     void Draw(const KamataEngine::Camera& camera);
 
+    // 地面の上面の高さを設定
+    void SetGroundHeight(float height);
+
 private:
     // Chickの回転・移動行列を更新
     void UpdateChickMatrix();
@@ -63,4 +66,8 @@ private:
 
     // ChickがDokannに衝突したか
     bool isChickHit_ = false;
+
+    // 地面の上面の高さ
+    float groundHeight_ = -10.0f;
+
 };
