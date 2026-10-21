@@ -73,6 +73,7 @@ void gameScene::NextMiniGame() {
 	{
 	case gameScene::basebool:
 		ganeScene_ = FlappyBird;
+		flappyBirdGame_->Reset();
 		break;
 	case gameScene::FlappyBird:
 		ganeScene_ = Western;
