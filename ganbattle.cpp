@@ -35,7 +35,6 @@ ganbattle::~ganbattle() {
 	delete ganModel_;
 	delete ganManModel_;
 }
-
 // WorldTransformの行列を更新して転送する(拡縮 → X回転 → Y回転 → 移動)
 static void UpdateWorldMatrix(WorldTransform& wt) {
 	// 拡縮行列
@@ -115,7 +114,6 @@ void ganbattle::ShowResult(Result r) {
 void ganbattle::Update() {
 	Input* input = Input::GetInstance();
 	const bool pressed = input->TriggerKey(DIK_SPACE);
-
 	switch (phase_) {
 	case Phase::Countdown: {
 		timer_ += kDt;
@@ -138,26 +136,6 @@ void ganbattle::Update() {
 			phase_ = Phase::Signal;
 			timer_ = 0.0f;
 			DebugText::GetInstance()->ConsolePrintf("DRAW!!\n");
-			// TODO: ここで合図のSEを鳴らす
-		}
-		break;
-	}
-
-	case Phase::Signal:
-		timer_ += kDt;
-
-		// 同フレームならCPU優先(先に撃たれた扱い)
-		if (timer_ >= cpuReaction_) {
-			ShowResult(Result::Lose);
-		} else if (pressed) {
-			ShowResult(Result::Win);
-		}
-		break;
-
-	case Phase::Result:
-		resultTimer_ += kDt;
-		if (resultTimer_ >= kResultTime) {
-			finished_ = true;
 		}
 		break;
 	}
