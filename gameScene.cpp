@@ -194,8 +194,15 @@ void gameScene::Draw() {
             break;
 
         case Western:
-            ganbattle_->Draw(gameCamera_->GetCamera());
-            break;      
+            ganbattle_->Draw();
+            break;
+
+        case RockBreaker:
+            break;
+
+        case RunningFromThtPolice:
+            break;
+            
         default:
             break;
         }
@@ -208,4 +215,12 @@ void gameScene::Draw() {
     default:
         break;
     }
+}
+
+
+// 2D描画(Sprite::PreDraw ~ PostDraw の間で呼ばれる)
+void gameScene::DrawUI() {
+	if (scene_ == Game && ganeScene_ == Western) {
+		ganbattle_->DrawUI();
+	}
 }

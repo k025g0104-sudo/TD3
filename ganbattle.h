@@ -23,6 +23,11 @@ public:
 	bool IsWin() const { return finished_ && result_ == Result::Win; }
 	bool IsGameOver() const { return finished_ && (result_ == Result::Lose || result_ == Result::Foul); }
 
+	// 2D(スプライト)描画。Sprite::PreDraw ~ PostDraw の間で呼ぶ
+	void DrawUI();
+
+	void Draw(); // ← (const KamataEngine::Camera& camera) をやめる
+
 private:
 	enum class Phase {
 		Countdown, // 合図待ち
@@ -46,6 +51,12 @@ private:
 	KamataEngine::WorldTransform ganWorldTransform_;
 	KamataEngine::WorldTransform ganManWorldTransform_;
 
+	// 専用カメラ(ImGuiで調整できる)
+	KamataEngine::Camera camera_;
+	void UpdateCameraDebug();
+
+	bool paused_ = false;
+
 	// 進行
 	Phase phase_ = Phase::Countdown;
 	Result result_ = Result::None;
@@ -56,4 +67,23 @@ private:
 	float cpuReaction_ = 0.5f;   // CPUが撃つまでの反応時間
 	float resultTimer_ = 0.0f;
 	int lastCountPrint_ = -1;
+
+	// カウントダウン数字
+	uint32_t numTex_[3] = {}; // 0:"1" 1:"2" 2:"3"
+	KamataEngine::Sprite* numSprite_[3] = {};
+	int currentNumber_ = 0; // 表示中の数字(0なら非表示)
+	float numFrac_ = 0.0f;  // その数字の残り割合(1→0)
+
+	// 調整用の基準値(ImGuiで変更できる。演出はこの値に上乗せされる)
+	KamataEngine::Vector3 gunBasePos_ = {};
+	KamataEngine::Vector3 gunBaseRot_ = {};
+	float gunBaseScale_ = 1.0f;
+
+	KamataEngine::Vector3 manBasePos_ = {};
+	KamataEngine::Vector3 manBaseRot_ = {};
+	float manBaseScale_ = 1.0f;
+
+	void ResetGunBase();
+	void ResetManBase();
+	void UpdateObjectDebug();
 };
