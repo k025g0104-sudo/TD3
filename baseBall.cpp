@@ -75,6 +75,9 @@ baseBall::~baseBall() {
 }
 
 void baseBall::Initialize() {
+	// ※モデルの読み込みとWorldTransformの生成は最初に一度だけ行う。
+	//   ゲーム状態の初期化は Reset() に任せる。
+
 	// バッターbox
 	model_ = Model::CreateFromOBJ("BatterBox", true);
 	worldTransform_.Initialize();
@@ -86,53 +89,73 @@ void baseBall::Initialize() {
 	baseballModel_ = Model::CreateFromOBJ("baseboll", true);
 	for (Ball& ball : balls_) {
 		ball.worldTrnasform.Initialize();
-		ball.active = false;
 	}
-	spawnTimer_ = 0;
 
 	// バット
 	batModel_ = Model::CreateFromOBJ("bat", true);
 	batWorldTransform_.Initialize();
+
+	// リング用3Dモデル("ring.obj"がModelsフォルダにある前提)
+	ringModel_ = Model::CreateFromOBJ("ring", true);
+	targetRingTransform_.Initialize();
+	for (int i = 0; i < kMaxBalls; ++i) {
+		approachRingTransforms_[i].Initialize();
+	}
+	flashRingTransform_.Initialize();
+
+	// ゲーム状態を初期値にする
+	Reset();
+}
+
+// ミニゲームが切り替わるたびに呼ぶ:ゲームの状態だけを初期値に戻す
+void baseBall::Reset() {
+	// ボール
+	for (Ball& ball : balls_) {
+		ball.active = false;
+		ball.judged = false;
+		ball.timer = 0;
+		ball.state = BallState::Pitched;
+		ball.velocity = { 0.0f, 0.0f, 0.0f };
+	}
+	spawnTimer_ = kPitchInterval - 1;
+
+	// バット
 	batWorldTransform_.translation_ = { -7.0f, 1.0f, 0.0f };
 	batWorldTransform_.rotation_.y = kBatStartAngle;
 	batWorldTransform_.rotation_.z = -1.5f;
 
+	isSwinging_ = false;
+	swingAngle_ = 0.0f;
+	swingTimer_ = 0;
+	swingCooldowonTimer_ = 0;
+
+	// 判定・スコア
 	lastJudge_ = Judge::None;
 	combo_ = 0;
 	score_ = 0;
 
-	// --- リング用3Dモデルの初期化 ---
-	// Modelsフォルダ内に "ring.obj" が配置されている前提です
-	ringModel_ = Model::CreateFromOBJ("ring", true);
-
+	// リング
 	const Vector3 hitPosition = { kTargetWorldX, kTargetWorldY, batWorldTransform_.translation_.z };
+	const Vector3 ringRotation = { 0.0f, 1.5f, 0.0f };
 
-	const Vector3 ringRotation = { 0.0f,1.5f,0.0f };
-
-	// ターゲットリング（打点位置に配置）
-	targetRingTransform_.Initialize();
+	// ターゲットリング(打点位置に配置)
 	targetRingTransform_.translation_ = hitPosition;
 	targetRingTransform_.scale_ = { 1.0f, 1.0f, 1.0f };
 	targetRingTransform_.rotation_ = ringRotation;
 
 	// 縮んでくるリング
 	for (int i = 0; i < kMaxBalls; ++i) {
-		approachRingTransforms_[i].Initialize();
 		approachRingTransforms_[i].translation_ = hitPosition;
 		approachRingTransforms_[i].scale_ = { kApproachStartScale, kApproachStartScale, kApproachStartScale };
-
 		approachRingTransforms_[i].rotation_ = ringRotation;
-
 		approachRingActive_[i] = false;
 	}
 
 	// 判定用演出リング
-	flashRingTransform_.Initialize();
 	flashRingTransform_.translation_ = hitPosition;
 	flashRingTransform_.scale_ = { 1.0f, 1.0f, 1.0f };
 	flashRingTransform_.rotation_ = ringRotation;
 	flashRingActive_ = false;
-
 	flashTimer_ = 0;
 }
 
@@ -154,7 +177,11 @@ void baseBall::SpawnBall() {
 void baseBall::UpdateBat() {
 	Input* input = Input::GetInstance();
 
-	if (!isSwinging_ && input->TriggerKey(DIK_Z)) {
+	if (swingCooldowonTimer_ > 0) {
+		swingCooldowonTimer_--;
+	}
+
+	if (!isSwinging_ && swingCooldowonTimer_ <= 0 && input->TriggerKey(DIK_SPACE)) {
 		isSwinging_ = true;
 		swingTimer_ = 0;
 	}
@@ -168,6 +195,7 @@ void baseBall::UpdateBat() {
 		if (swingTimer_ >= kSwingFrame) {
 			isSwinging_ = false;
 			swingAngle_ = 0.0f;
+			swingCooldowonTimer_ = kSwingCoolDownFrame;
 		}
 	}
 }
