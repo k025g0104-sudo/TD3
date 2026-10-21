@@ -11,28 +11,27 @@
 
 using namespace KamataEngine;
 
-// ミニゲーム名
-static const char* SceneName(int s) {
-    switch (s) {
-    case 0: return "basebool";
-    case 1: return "FlappyBird";
-    case 2: return "Western";
-    case 3: return "RockBreaker";
-    case 4: return "RunningFromThtPolice";
-    default: return "Unknown";
-    }
+
+static const char* SceneName(int s)
+{
+	switch (s)
+	{
+	case 0: return "basebool";
+	case 1: return "FlappyBird";
+	case 2: return "Western";
+	default: return "Unknown";
+	}
 }
 
 // デストラクタ
 gameScene::~gameScene() {
-    delete baseBall_;
-    delete flappyBirdGame_;
-    delete gameBackground_;
-    delete gameCamera_;
-
-    delete baseballModel_;
-    delete batModel_;
-    delete ganbattle_;
+	delete baseBall_;
+	delete gameCamera_;
+	delete flappyBirdGame_;
+	delete gameBackground_;
+	delete baseballModel_;
+	delete batModel_;
+	delete ganbattle_;
 }
 
 // 初期化
@@ -40,7 +39,7 @@ void gameScene::Intialize() {
     // 野球ゲーム
     baseBall_ = new baseBall();
     baseBall_->Initialize();
-
+	
     // FlappyBird
     flappyBirdGame_ = new FlappyBirdGame();
     flappyBirdGame_->Initialize();
@@ -53,132 +52,120 @@ void gameScene::Intialize() {
     gameBackground_ = new GameBackground();
     gameBackground_->Initialize();
 
-    // 野球ボールモデル
-    baseballModel_ = Model::CreateFromOBJ("baseboll");
-    baseballWorldTransform_.Initialize();
+	// 野球ボールモデル
+	baseballModel_ = Model::CreateFromOBJ("baseboll");
+	baseballWorldTransform_.Initialize();
 
-    // バットモデル
-    batModel_ = Model::CreateFromOBJ("bat");
-    batWorldTransform_.Initialize();
+	// バットモデル
+	batModel_ = Model::CreateFromOBJ("bat");
+	batWorldTransform_.Initialize();
 
-    // Western（早撃ちゲーム）
-    ganbattle_ = new ganbattle();
-    ganbattle_->Initialize();
+	// Western(早撃ちゲーム)
+	ganbattle_ = new ganbattle();
+	ganbattle_->Initialize();
+
 }
 
-// 更新
-void gameScene::Update() {
-    Input* input = Input::GetInstance();
+void gameScene::NextMiniGame() {
+	miniGameTimer_ = 0;
 
-    // カメラ更新
-    gameCamera_->Update();
+	switch (ganeScene_)
+	{
+	case gameScene::basebool:
+		ganeScene_ = FlappyBird;
+		break;
+	case gameScene::FlappyBird:
+		ganeScene_ = Western;
+		break;
+	case gameScene::Western:
+		ganeScene_ = basebool;
+		baseBall_->Reset();
+		break;
+	default:
+		break;
+	}
+}
 
-    switch (scene_) {
-    case Title:
-        // タイトルからゲームへ
-        if (input->TriggerKey(DIK_SPACE)) {
-            scene_ = Game;
-        }
-        break;
+void gameScene::Update()
+{
+	Input* input = Input::GetInstance();
 
-    case Game:
-        // ミニゲームごとの地面位置
-        switch (ganeScene_) {
-        case basebool:
-            gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
-            break;
+	gameCamera_->Update();
 
-        case FlappyBird: {
-            const float groundY = -10.0f;
-            gameBackground_->SetYukaPosition({ 0.0f, groundY, 0.0f });
-            flappyBirdGame_->SetGroundHeight(groundY);
-            break;
-        }
+	switch (scene_)
+	{
+	case Title:
+		if (input->TriggerKey(DIK_RETURN) || input->TriggerKey(DIK_SPACE))
+		{
+			scene_ = Game;
+			ganeScene_ = basebool;
+			baseBall_->Reset();
+			miniGameTimer_ = 0; 
+			totalTimer_ = 0;		
+		}
+		break;
 
-        case Western:
-        case RockBreaker:
-        case RunningFromThtPolice:
-            gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
-            break;
+	case Game:		
+		if (++totalTimer_>=kTotalFrames)
+		{
+			scene_ = Clear;			
+			break;
+		}
 
-        default:
-            break;
-        }
+		// 5秒経過したら次のミニゲームへ
+		if (++miniGameTimer_ >= kMiniGameFrames)
+		{
+			NextMiniGame();			
+		}
 
-        // 各ミニゲームの更新
-        switch (ganeScene_) {
-        case basebool:
-            baseBall_->Update();
+		// ミニゲームごとに地面の位置を設定
+		switch (ganeScene_)
+		{
+		case basebool:
+		case Western:
+			gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
+			break;
+
+		case FlappyBird:
+		{
+			const float groundY = -10.0f;
+			gameBackground_->SetYukaPosition({ 0.0f, groundY, 0.0f });
+			flappyBirdGame_->SetGroundHeight(groundY);
+			break;
+		}
+		default: break;
+		}
+
+		// ミニゲームの更新
+		switch (ganeScene_)
+		{
+		case basebool:   baseBall_->Update();       break;
+		case FlappyBird: flappyBirdGame_->Update(); break;
+		default: break;
+		}
 
 #ifdef _DEBUG
-            if (input->TriggerKey(DIK_LSHIFT)) {
-                ganeScene_ = FlappyBird;
-                DebugText::GetInstance()->ConsolePrintf(
-                    "Scene->%s\n", SceneName(ganeScene_));
-            }
+		// デバッグ用:LSHIFTで即座に次へ
+		if (input->TriggerKey(DIK_LSHIFT))
+		{
+			NextMiniGame();
+		}
 #endif
-            break;
+		break;
 
-        case FlappyBird:
-            flappyBirdGame_->Update();
+	case Clear:
+		if (input->TriggerKey(DIK_RETURN) || input->TriggerKey(DIK_SPACE))
+		{
+			scene_ = Title;
+			ganeScene_ = basebool;
+			miniGameTimer_ = 0;
+			totalTimer_ = 0;
+		}
+		break;
 
-#ifdef _DEBUG
-            if (input->TriggerKey(DIK_LSHIFT)) {
-                ganeScene_ = Western;
-                ganbattle_->Start();
-
-                DebugText::GetInstance()->ConsolePrintf(
-                    "Scene->%s\n", SceneName(ganeScene_));
-            }
-#endif
-            break;
-
-        case Western:
-            ganbattle_->Update();
-
-            if (ganbattle_->IsGameOver()) {
-                scene_ = Title;
-                ganeScene_ = basebool;
-            }
-            else if (ganbattle_->IsWin()) {
-                ganeScene_ = RockBreaker;
-            }
-            break;
-
-        case RockBreaker:
-#ifdef _DEBUG
-            if (input->TriggerKey(DIK_LSHIFT)) {
-                ganeScene_ = RunningFromThtPolice;
-                DebugText::GetInstance()->ConsolePrintf(
-                    "Scene->%s\n", SceneName(ganeScene_));
-            }
-#endif
-            break;
-
-        case RunningFromThtPolice:
-#ifdef _DEBUG
-            if (input->TriggerKey(DIK_LSHIFT)) {
-                scene_ = Clear;
-            }
-#endif
-            break;
-
-        default:
-            break;
-        }
-        break;
-
-    case Clear:
-        // クリアからタイトルへ
-        if (input->TriggerKey(DIK_SPACE)) {
-            scene_ = Title;
-            ganeScene_ = basebool;
-        }
-        break;
-
-    default:
-        break;
-    }
+	default:
+		break;
+	}
 }
 
 // 描画
@@ -215,7 +202,7 @@ void gameScene::Draw() {
 
         case RunningFromThtPolice:
             break;
-
+            
         default:
             break;
         }
