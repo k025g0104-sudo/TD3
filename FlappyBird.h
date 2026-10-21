@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KamataEngine.h"
+#include <array>
 
 // FlappyBirdの処理を管理するクラス
 class FlappyBirdGame
@@ -32,11 +33,14 @@ private:
     // Dokannモデル
     KamataEngine::Model* dokannModel_ = nullptr;
 
+    // 土管の組数
+    static constexpr size_t kDokannCount = 3;
+
     // 下側のDokann
-    KamataEngine::WorldTransform dokannWorldTransform_;
+    std::array<KamataEngine::WorldTransform, kDokannCount> dokannWorldTransforms_;
 
     // 上側のDokann
-    KamataEngine::WorldTransform dokannUpperWorldTransform_;
+    std::array<KamataEngine::WorldTransform, kDokannCount> dokannUpperWorldTransforms_;
 
     // Dokannの移動速度
     static constexpr float kDokannMoveSpeed = 0.1f;
@@ -46,6 +50,9 @@ private:
 
     // Dokannを右側に戻すX座標
     static constexpr float kDokannStartX = 10.0f;
+
+    // Dokann同士のX方向の間隔
+    static constexpr float kDokannSpacing = 12.0f;
 
     // Chickの上下方向の速度
     float chickVelocityY_ = 0.0f;
