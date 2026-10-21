@@ -97,6 +97,11 @@ void baseBall::Initialize() {
 	batWorldTransform_.rotation_.y = kBatStartAngle;
 	batWorldTransform_.rotation_.z = -1.5f;
 
+	isSwinging_ = false;
+	swingAngle_ = 0.0f;
+	swingTimer_ = 0;
+	swingCooldowonTimer_ = 0;
+
 	lastJudge_ = Judge::None;
 	combo_ = 0;
 	score_ = 0;
@@ -154,7 +159,11 @@ void baseBall::SpawnBall() {
 void baseBall::UpdateBat() {
 	Input* input = Input::GetInstance();
 
-	if (!isSwinging_ && input->TriggerKey(DIK_Z)) {
+	if (swingCooldowonTimer_ > 0) {
+		swingCooldowonTimer_--;
+	}
+
+	if (!isSwinging_&&swingCooldowonTimer_<=0&&input->TriggerKey(DIK_Z)) {
 		isSwinging_ = true;
 		swingTimer_ = 0;
 	}
@@ -168,6 +177,7 @@ void baseBall::UpdateBat() {
 		if (swingTimer_ >= kSwingFrame) {
 			isSwinging_ = false;
 			swingAngle_ = 0.0f;
+			swingCooldowonTimer_ = kSwingCoolDownFrame;
 		}
 	}
 }

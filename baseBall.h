@@ -1,7 +1,6 @@
 #pragma once
 #include "KamataEngine.h"
 #include <array>
-
 class baseBall {
 public:
 	enum class Judge {
@@ -72,7 +71,7 @@ private:
 	static constexpr int kTravelBeats = 4;
 	static constexpr float kPitchDistance = 50.0f;
 
-	static constexpr int kPitchInterval = static_cast<int>(kFramesPerBeat*2);
+	static constexpr int kPitchInterval = static_cast<int>(kFramesPerBeat*6);
 	static constexpr float kPitchSpeed = kPitchDistance / (kFramesPerBeat * kTravelBeats);
 
 	static inline int kSwingFrame = 20;
@@ -93,6 +92,9 @@ private:
 	static constexpr float kApproachFrame = 60.0f;     
 	static constexpr float kApproachStartScale = 3.0f; 
 	static constexpr int kFlashFrame = 20;             
+
+	static inline const int kSwingCoolDownFrame = 30;
+	int swingCooldowonTimer_ = 0;
 
 	KamataEngine::Model* ringModel_ = nullptr;
 	KamataEngine::WorldTransform targetRingTransform_;
