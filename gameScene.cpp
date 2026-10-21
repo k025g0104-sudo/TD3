@@ -196,7 +196,7 @@ void gameScene::Draw() {
         case Western:
             ganbattle_->Draw();
             break;
-
+            
         default:
             break;
         }
