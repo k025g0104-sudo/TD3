@@ -14,9 +14,10 @@ public:
 	baseBall();
 	~baseBall();
 	void Initialize();
+	void Reset(); // ゲーム状態を初期値に戻す(ミニゲーム切り替え時に呼ぶ)
 	void Update();
 	void Draw(const KamataEngine::Camera& camera);
-	
+
 
 	Judge GetLastJudge() const { return lastJudge_; }
 	int GetCombo() const { return combo_; }
@@ -71,7 +72,7 @@ private:
 	static constexpr int kTravelBeats = 4;
 	static constexpr float kPitchDistance = 50.0f;
 
-	static constexpr int kPitchInterval = static_cast<int>(kFramesPerBeat*6);
+	static constexpr int kPitchInterval = static_cast<int>(kFramesPerBeat * 6);
 	static constexpr float kPitchSpeed = kPitchDistance / (kFramesPerBeat * kTravelBeats);
 
 	static inline int kSwingFrame = 20;
@@ -85,13 +86,13 @@ private:
 	static inline const float kBatStartAngle = 1.0f;
 	static inline const float kBatendAngle = -2.0f;
 
-	
-	static constexpr float kTargetWorldX = 0.0f;       
-	static constexpr float kTargetWorldY = 2.0f;       
-	static constexpr float kTargetSize = 120.0f;       
-	static constexpr float kApproachFrame = 60.0f;     
-	static constexpr float kApproachStartScale = 3.0f; 
-	static constexpr int kFlashFrame = 20;             
+
+	static constexpr float kTargetWorldX = 0.0f;
+	static constexpr float kTargetWorldY = 2.0f;
+	static constexpr float kTargetSize = 120.0f;
+	static constexpr float kApproachFrame = 60.0f;
+	static constexpr float kApproachStartScale = 3.0f;
+	static constexpr int kFlashFrame = 20;
 
 	static inline const int kSwingCoolDownFrame = 30;
 	int swingCooldowonTimer_ = 0;
