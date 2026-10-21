@@ -28,6 +28,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 
 		dxCommon->PreDraw();
 		scene->Draw();
+		Sprite::PreDraw(dxCommon->GetCommandList());
+		scene->DrawUI();
+		Sprite::PostDraw();
 		imguiManager->Draw();
 		dxCommon->PostDraw();
 	}

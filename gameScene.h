@@ -59,7 +59,10 @@ class gameScene
 public:
 	~gameScene();
 
-    void Intialize();
-    void Update();
-    void Draw();
+	void Intialize();
+	void Update();
+	void Draw();
+
+	// 2D(スプライト)描画。Sprite::PreDraw ~ PostDraw の間で呼ぶ
+	void DrawUI();
 };

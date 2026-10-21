@@ -5,7 +5,15 @@
 using namespace KamataEngine;
 
 namespace {
-// ===== 調整用の定数(見え方が合わなければここだけ触る) =====
+
+// カメラの初期位置・角度(ImGuiで調整して、良い値をここに書き戻す)
+const Vector3 kCamPos = {0.0f, 4.0f, 0.0f};
+const Vector3 kCamRot = {0.0f, 0.0f, 0.0f};
+
+// カウント数字の表示
+const Vector2 kNumCenter = {640.0f, 360.0f}; // 画面中央(解像度に合わせて変更)
+constexpr float kNumSize = 256.0f;           // 数字の基本サイズ(px)
+
 constexpr float kDt = 1.0f / 60.0f; // 1フレームの時間
 constexpr float kPi = 3.14159265f;
 
@@ -21,19 +29,22 @@ constexpr float kCpuReactMax = 0.65f;
 constexpr float kResultTime = 1.8f;
 
 // 相手ガンマン(モデルは高さ約7)
-const Vector3 kManPos = {0.0f, 0.0f, 30.0f};
-constexpr float kManRotY = kPi; // プレイヤー側を向かせる(逆なら 0.0f)
-constexpr float kManScale = 1.0f;
+const Vector3 kManPos = {-1.2f, 4.8f, 29.65f};
+const Vector3 kManRot = {0.2f, 3.14f, 0.16f}; // プレイヤー側を向かせる(逆なら 0.0f)
+constexpr float kManScale = 0.850f;
 
 // プレイヤーの銃(モデルは全長約16なので縮小)
-const Vector3 kGunPos = {1.5f, 1.0f, 12.0f};
-constexpr float kGunRotY = kPi; // 銃口を相手(+Z)へ向ける(逆なら 0.0f)
-constexpr float kGunScale = 0.3f;
+const Vector3 kGunPos = {-0.6f, 3.75f, 18.95f};
+const Vector3 kGunRot = {0.22f, 3.11f, 0.24f}; // 銃口を相手(+Z)へ向ける(逆なら 0.0f)
+constexpr float kGunScale = 0.6f;
 } // namespace
 
 ganbattle::~ganbattle() {
 	delete ganModel_;
 	delete ganManModel_;
+	for (int i = 0; i < 3; ++i) {
+		delete numSprite_[i];
+	}
 }
 // WorldTransformの行列を更新して転送する(拡縮 → X回転 → Y回転 → 移動)
 static void UpdateWorldMatrix(WorldTransform& wt) {
@@ -69,6 +80,27 @@ void ganbattle::Initialize() {
 	ganWorldTransform_.Initialize();
 	ganManWorldTransform_.Initialize();
 
+	// カウントダウン数字
+	const char* paths[3] = {
+	    "./Resources/numbers1.png",
+	    "./Resources/numbers2.png",
+	    "./Resources/numbers3.png",
+	};
+	for (int i = 0; i < 3; ++i) {
+		numTex_[i] = TextureManager::Load(paths[i]);
+		numSprite_[i] = Sprite::Create(numTex_[i], kNumCenter);
+		numSprite_[i]->SetAnchorPoint({0.5f, 0.5f}); // 中心基準にする
+		numSprite_[i]->SetSize({kNumSize, kNumSize});
+	}
+
+	camera_.Initialize();
+	camera_.translation_ = kCamPos;
+	camera_.rotation_ = kCamRot;
+	camera_.UpdateMatrix();
+
+	ResetGunBase();
+	ResetManBase();
+
 	Start();
 }
 
@@ -86,6 +118,10 @@ void ganbattle::Start() {
 
 	countdownTime_ = kCountBase + countDist(rng); // 合図までの時間
 	cpuReaction_ = reactDist(rng);                // CPUの反応時間
+
+	currentNumber_ = 0;
+
+	paused_ = false;
 
 	UpdateTransforms();
 }
@@ -112,27 +148,53 @@ void ganbattle::ShowResult(Result r) {
 }
 
 void ganbattle::Update() {
+	UpdateCameraDebug();
+	UpdateObjectDebug(); 
 	Input* input = Input::GetInstance();
+
+#ifdef _DEBUG
+	// Pキーで一時停止の切り替え
+	if (input->TriggerKey(DIK_P)) {
+		paused_ = !paused_;
+	}
+	// 停止中は進行を止める(見た目の更新だけ行う)
+	if (paused_) {
+		UpdateTransforms();
+		return;
+	}
+#endif
+
 	const bool pressed = input->TriggerKey(DIK_SPACE);
 	switch (phase_) {
 	case Phase::Countdown: {
 		timer_ += kDt;
 
-		// 残り秒数を1秒ごとに表示
-		int remain = static_cast<int>(std::ceil(countdownTime_ - timer_));
-		if (remain != lastCountPrint_ && remain > 0 && remain <= 3) {
-			lastCountPrint_ = remain;
-			DebugText::GetInstance()->ConsolePrintf("%d...\n", remain);
+		// 残り秒数(切り上げ)
+		float left = countdownTime_ - timer_;
+		int remain = static_cast<int>(std::ceil(left));
+
+		// 最後の3秒だけ数字を出す
+		if (remain >= 1 && remain <= 3) {
+			currentNumber_ = remain;
+			numFrac_ = left - static_cast<float>(remain - 1); // 1.0 → 0.0
+			if (remain != lastCountPrint_) {
+				lastCountPrint_ = remain;
+				// TODO: ここでカウントのSEを鳴らす
+			}
+		} else {
+			currentNumber_ = 0;
 		}
 
 		// お手つき
 		if (pressed) {
+			currentNumber_ = 0;
 			ShowResult(Result::Foul);
 			break;
 		}
 
 		// 合図
 		if (timer_ >= countdownTime_) {
+			currentNumber_ = 0;
 			phase_ = Phase::Signal;
 			timer_ = 0.0f;
 			DebugText::GetInstance()->ConsolePrintf("DRAW!!\n");
@@ -140,14 +202,92 @@ void ganbattle::Update() {
 		break;
 	}
 
+	case Phase::Signal:
+		timer_ += kDt;
+
+		// 同フレームならCPU優先(先に撃たれた扱い)
+		if (timer_ >= cpuReaction_) {
+			ShowResult(Result::Lose);
+		} else if (pressed) {
+			ShowResult(Result::Win);
+		}
+		break;
+
+	case Phase::Result:
+		resultTimer_ += kDt;
+		if (resultTimer_ >= kResultTime) {
+			finished_ = true;
+		}
+		break;
+	}
+
 	UpdateTransforms();
+}
+
+void ganbattle::UpdateCameraDebug() {
+#ifdef _DEBUG
+	ImGui::Begin("ganbattle camera");
+	ImGui::Checkbox("pause (P key)", &paused_);
+	ImGui::DragFloat3("position", &camera_.translation_.x, 0.1f);
+	ImGui::DragFloat3("rotation", &camera_.rotation_.x, 0.01f);
+	ImGui::DragFloat("fovY", &camera_.fovAngleY, 0.01f, 0.1f, 3.0f);
+	if (ImGui::Button("reset")) {
+		camera_.translation_ = kCamPos;
+		camera_.rotation_ = kCamRot;
+		camera_.fovAngleY = 0.7854f; // 45度
+	}
+	ImGui::Text("pos: %.2f, %.2f, %.2f", camera_.translation_.x, camera_.translation_.y, camera_.translation_.z);
+	ImGui::Text("rot: %.2f, %.2f, %.2f", camera_.rotation_.x, camera_.rotation_.y, camera_.rotation_.z);
+	ImGui::End();
+#endif
+	camera_.UpdateMatrix();
+}
+void ganbattle::ResetGunBase() {
+	gunBasePos_ = kGunPos;
+	gunBaseRot_ = kGunRot;
+	gunBaseScale_ = kGunScale;
+}
+
+void ganbattle::ResetManBase() {
+	manBasePos_ = kManPos;
+	manBaseRot_ = kManRot;
+	manBaseScale_ = kManScale;
+}
+
+void ganbattle::UpdateObjectDebug() {
+#ifdef _DEBUG
+	// ---- 銃 ----
+	ImGui::Begin("ganbattle gun");
+	ImGui::DragFloat3("position", &gunBasePos_.x, 0.05f);
+	ImGui::DragFloat3("rotation", &gunBaseRot_.x, 0.01f);
+	ImGui::DragFloat("scale", &gunBaseScale_, 0.01f, 0.01f, 10.0f);
+	if (ImGui::Button("reset")) {
+		ResetGunBase();
+	}
+	ImGui::Text("pos: %.2f, %.2f, %.2f", gunBasePos_.x, gunBasePos_.y, gunBasePos_.z);
+	ImGui::Text("rot: %.2f, %.2f, %.2f", gunBaseRot_.x, gunBaseRot_.y, gunBaseRot_.z);
+	ImGui::Text("scale: %.2f", gunBaseScale_);
+	ImGui::End();
+
+	// ---- 相手ガンマン ----
+	ImGui::Begin("ganbattle man");
+	ImGui::DragFloat3("position", &manBasePos_.x, 0.05f);
+	ImGui::DragFloat3("rotation", &manBaseRot_.x, 0.01f);
+	ImGui::DragFloat("scale", &manBaseScale_, 0.01f, 0.01f, 10.0f);
+	if (ImGui::Button("reset")) {
+		ResetManBase();
+	}
+	ImGui::Text("pos: %.2f, %.2f, %.2f", manBasePos_.x, manBasePos_.y, manBasePos_.z);
+	ImGui::Text("rot: %.2f, %.2f, %.2f", manBaseRot_.x, manBaseRot_.y, manBaseRot_.z);
+	ImGui::Text("scale: %.2f", manBaseScale_);
+	ImGui::End();
+#endif
 }
 
 void ganbattle::UpdateTransforms() {
 	// ---------- 相手ガンマン ----------
-	Vector3 manPos = kManPos;
-	Vector3 manRot = {0.0f, kManRotY, 0.0f};
-	float manScale = kManScale;
+	Vector3 manPos = manBasePos_;
+	Vector3 manRot = manBaseRot_;
 
 	if (phase_ == Phase::Signal) {
 		// 合図: ピョンと跳ねて知らせる
@@ -156,7 +296,7 @@ void ganbattle::UpdateTransforms() {
 		float t = std::fmin(resultTimer_ / 0.6f, 1.0f);
 		if (result_ == Result::Win) {
 			// 撃たれて後ろに倒れる
-			manRot.x = -kPi * 0.5f * t;
+			manRot.x += -kPi * 0.5f * t;
 		} else if (result_ == Result::Lose) {
 			// 勝ち誇ってわずかに前へ
 			manPos.z -= 2.0f * t;
@@ -165,11 +305,11 @@ void ganbattle::UpdateTransforms() {
 
 	ganManWorldTransform_.translation_ = manPos;
 	ganManWorldTransform_.rotation_ = manRot;
-	ganManWorldTransform_.scale_ = {manScale, manScale, manScale};
+	ganManWorldTransform_.scale_ = {manBaseScale_, manBaseScale_, manBaseScale_};
 
 	// ---------- プレイヤーの銃 ----------
-	Vector3 gunPos = kGunPos;
-	Vector3 gunRot = {0.0f, kGunRotY, 0.0f};
+	Vector3 gunPos = gunBasePos_;
+	Vector3 gunRot = gunBaseRot_;
 
 	// 待機中のゆらぎ(緊張感)
 	if (phase_ == Phase::Countdown) {
@@ -179,7 +319,7 @@ void ganbattle::UpdateTransforms() {
 	// 発砲の反動(勝ち or お手つき時にプレイヤーが撃った扱い)
 	if (phase_ == Phase::Result && (result_ == Result::Win || result_ == Result::Foul)) {
 		float t = std::fmin(resultTimer_ / 0.2f, 1.0f);
-		gunRot.x = -0.5f * std::sin(t * kPi);
+		gunRot.x += -0.5f * std::sin(t * kPi);
 	}
 	// やられた時は銃が下がる
 	if (phase_ == Phase::Result && result_ == Result::Lose) {
@@ -188,17 +328,31 @@ void ganbattle::UpdateTransforms() {
 
 	ganWorldTransform_.translation_ = gunPos;
 	ganWorldTransform_.rotation_ = gunRot;
-	ganWorldTransform_.scale_ = {kGunScale, kGunScale, kGunScale};
+	ganWorldTransform_.scale_ = {gunBaseScale_, gunBaseScale_, gunBaseScale_};
 
 	UpdateWorldMatrix(ganManWorldTransform_);
 	UpdateWorldMatrix(ganWorldTransform_);
 }
 
-void ganbattle::Draw(const Camera& camera) {
+void ganbattle::Draw() {
 	Model::PreDraw();
 
-	ganManModel_->Draw(ganManWorldTransform_, camera);
-	ganModel_->Draw(ganWorldTransform_, camera);
+	ganManModel_->Draw(ganManWorldTransform_, camera_);
+	ganModel_->Draw(ganWorldTransform_, camera_);
 
 	Model::PostDraw();
+}
+
+void ganbattle::DrawUI() {
+	if (currentNumber_ < 1 || currentNumber_ > 3) {
+		return;
+	}
+	Sprite* s = numSprite_[currentNumber_ - 1];
+
+	// 大きく出て、縮みながら薄くなる
+	float size = kNumSize * (0.8f + 0.4f * numFrac_);
+	float alpha = std::fmin(1.0f, numFrac_ * 2.0f + 0.2f);
+	s->SetSize({size, size});
+	s->SetColor({1.0f, 1.0f, 1.0f, alpha});
+	s->Draw();
 }
