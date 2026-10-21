@@ -197,12 +197,6 @@ void gameScene::Draw() {
             ganbattle_->Draw();
             break;
 
-        case RockBreaker:
-            break;
-
-        case RunningFromThtPolice:
-            break;
-            
         default:
             break;
         }
