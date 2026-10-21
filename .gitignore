@@ -83,6 +83,10 @@ StyleCopReport.xml
 !Resources/BatterBox/BatterBox.obj
 !Resources/Dokann/Dokann.obj
 !Resources/ganSAA/ganSAA.obj
+!Resources/Sky/Sky.obj
+!Resources/Yuka/Yuka.obj
+!Resources/ring/ring.obj
+!Resources/ganMan/ganMan.obj
 *.iobj
 *.pch
 *.pdb
