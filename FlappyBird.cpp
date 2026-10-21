@@ -55,30 +55,37 @@ void FlappyBirdGame::Initialize()
     // Dokannモデルの読み込み
     dokannModel_ = Model::CreateFromOBJ("Dokann");
 
-    // 下側のDokann
-    dokannWorldTransform_.Initialize();
-    dokannWorldTransform_.translation_ = { 10.0f, -12.0f, 0.0f };
+    // 3組のDokannを初期化
+    for (size_t i = 0; i < kDokannCount; ++i)
+    {
+        // 土管のX座標を一定間隔で配置
+        float x = kDokannStartX + static_cast<float>(i) * kDokannSpacing;
 
-    dokannWorldTransform_.matWorld_ =
-        MathUtility::MakeTranslateMatrix(dokannWorldTransform_.translation_);
+        // 下側のDokann
+        dokannWorldTransforms_[i].Initialize();
+        dokannWorldTransforms_[i].translation_ = { x, -12.0f, 0.0f };
 
-    dokannWorldTransform_.TransferMatrix();
+        dokannWorldTransforms_[i].matWorld_ =
+            MathUtility::MakeTranslateMatrix(
+                dokannWorldTransforms_[i].translation_);
 
-    // 上側のDokann
-    dokannUpperWorldTransform_.Initialize();
-    dokannUpperWorldTransform_.translation_ = { 10.0f, 14.0f, 0.0f };
+        dokannWorldTransforms_[i].TransferMatrix();
 
-    // 上下反転用のスケール
-    dokannUpperWorldTransform_.scale_ = { 1.0f, -1.0f, 1.0f };
+        // 上側のDokann
+        dokannUpperWorldTransforms_[i].Initialize();
+        dokannUpperWorldTransforms_[i].translation_ = { x, 14.0f, 0.0f };
 
-    // 平行移動行列を作成
-    dokannUpperWorldTransform_.matWorld_ =
-        MathUtility::MakeTranslateMatrix(dokannUpperWorldTransform_.translation_);
+        // 上下反転
+        dokannUpperWorldTransforms_[i].scale_ = { 1.0f, -1.0f, 1.0f };
 
-    // Y方向を反転
-    dokannUpperWorldTransform_.matWorld_.m[1][1] = -1.0f;
+        dokannUpperWorldTransforms_[i].matWorld_ =
+            MathUtility::MakeTranslateMatrix(
+                dokannUpperWorldTransforms_[i].translation_);
 
-    dokannUpperWorldTransform_.TransferMatrix();
+        dokannUpperWorldTransforms_[i].matWorld_.m[1][1] = -1.0f;
+
+        dokannUpperWorldTransforms_[i].TransferMatrix();
+    }
 
     // Chickの速度と衝突状態を初期化
     chickVelocityY_ = 0.0f;
@@ -103,21 +110,33 @@ void FlappyBirdGame::Update()
             // Chickの行列を更新
             UpdateChickMatrix();
 
-            // Dokannの位置を初期化
-            dokannWorldTransform_.translation_ = { 10.0f, -12.0f, 0.0f };
-            dokannUpperWorldTransform_.translation_ = { 10.0f, 14.0f, 0.0f };
+            // 3組のDokannの位置を初期化
+            for (size_t i = 0; i < kDokannCount; ++i)
+            {
+                // 初期配置のX座標
+                float x = kDokannStartX + static_cast<float>(i) * kDokannSpacing;
 
-            // 下側のDokannの行列を更新
-            dokannWorldTransform_.matWorld_ =
-                MathUtility::MakeTranslateMatrix(dokannWorldTransform_.translation_);
-            dokannWorldTransform_.TransferMatrix();
+                // 下側のDokann
+                dokannWorldTransforms_[i].translation_ = { x, -12.0f, 0.0f };
 
-            // 上側のDokannの行列を更新
-            dokannUpperWorldTransform_.matWorld_ =
-                MathUtility::MakeTranslateMatrix(dokannUpperWorldTransform_.translation_);
+                dokannWorldTransforms_[i].matWorld_ =
+                    MathUtility::MakeTranslateMatrix(
+                        dokannWorldTransforms_[i].translation_);
 
-            dokannUpperWorldTransform_.matWorld_.m[1][1] = -1.0f;
-            dokannUpperWorldTransform_.TransferMatrix();
+                dokannWorldTransforms_[i].TransferMatrix();
+
+                // 上側のDokann
+                dokannUpperWorldTransforms_[i].translation_ = { x, 14.0f, 0.0f };
+
+                dokannUpperWorldTransforms_[i].matWorld_ =
+                    MathUtility::MakeTranslateMatrix(
+                        dokannUpperWorldTransforms_[i].translation_);
+
+                // 上下反転を維持
+                dokannUpperWorldTransforms_[i].matWorld_.m[1][1] = -1.0f;
+
+                dokannUpperWorldTransforms_[i].TransferMatrix();
+            }
 
             // 衝突状態を解除
             isChickHit_ = false;
@@ -171,94 +190,119 @@ void FlappyBirdGame::Update()
     // Chickの行列を更新
     UpdateChickMatrix();
 
-    // 下側のDokannを左へ移動
-    dokannWorldTransform_.translation_.x -= kDokannMoveSpeed;
+    // 乱数生成器を用意（初回のみ初期化）
+    static std::mt19937 randomEngine(std::random_device{}());
 
-    // 上側のDokannも同じX座標にする
-    dokannUpperWorldTransform_.translation_.x =
-        dokannWorldTransform_.translation_.x;
+    // 土管の高さを変更する乱数
+    static std::uniform_real_distribution<float> randomOffset(-3.0f, 3.0f);
 
-    // 左端まで移動したら右側へ戻す
-    if (dokannWorldTransform_.translation_.x < kDokannLeftLimit)
+    // 3組のDokannを移動・更新
+    for (size_t i = 0; i < kDokannCount; ++i)
     {
-        // 土管のX座標を初期位置に戻す
-        dokannWorldTransform_.translation_.x = kDokannStartX;
-        dokannUpperWorldTransform_.translation_.x = kDokannStartX;
+        // 下側のDokannを左へ移動
+        dokannWorldTransforms_[i].translation_.x -= kDokannMoveSpeed;
 
-        // 乱数生成器を用意（初回のみ初期化）
-        static std::mt19937 randomEngine(std::random_device{}());
+        // 上側のDokannも同じX座標にする
+        dokannUpperWorldTransforms_[i].translation_.x =
+            dokannWorldTransforms_[i].translation_.x;
 
-        // 上下に移動する量をランダムに決める
-        static std::uniform_real_distribution<float> randomOffset(-3.0f, 3.0f);
+        // 左端まで移動したら最後尾に配置する
+        if (dokannWorldTransforms_[i].translation_.x < kDokannLeftLimit)
+        {
+            // 他の土管の中で最も右にあるX座標を探す
+            float rightmostX = dokannWorldTransforms_[i].translation_.x;
 
-        float offsetY = randomOffset(randomEngine);
+            for (size_t j = 0; j < kDokannCount; ++j)
+            {
+                if (dokannWorldTransforms_[j].translation_.x > rightmostX)
+                {
+                    rightmostX = dokannWorldTransforms_[j].translation_.x;
+                }
+            }
 
-        // 上下の土管の間隔を保ちながら移動
-        dokannWorldTransform_.translation_.y = -12.0f + offsetY;
-        dokannUpperWorldTransform_.translation_.y = 14.0f + offsetY;
+            // 最後尾のさらに右側へ配置
+            float newX = rightmostX + kDokannSpacing;
+
+            dokannWorldTransforms_[i].translation_.x = newX;
+            dokannUpperWorldTransforms_[i].translation_.x = newX;
+
+            // 上下の土管の間隔を維持したまま高さをランダムに変更
+            float offsetY = randomOffset(randomEngine);
+
+            dokannWorldTransforms_[i].translation_.y = -12.0f + offsetY;
+            dokannUpperWorldTransforms_[i].translation_.y = 14.0f + offsetY;
+        }
+
+        // 下側のDokannの行列を更新
+        dokannWorldTransforms_[i].matWorld_ =
+            MathUtility::MakeTranslateMatrix(
+                dokannWorldTransforms_[i].translation_);
+
+        dokannWorldTransforms_[i].TransferMatrix();
+
+        // 上側のDokannの行列を更新
+        dokannUpperWorldTransforms_[i].matWorld_ =
+            MathUtility::MakeTranslateMatrix(
+                dokannUpperWorldTransforms_[i].translation_);
+
+        // 上下反転を維持
+        dokannUpperWorldTransforms_[i].matWorld_.m[1][1] = -1.0f;
+
+        dokannUpperWorldTransforms_[i].TransferMatrix();
     }
-
-    // 下側のDokannの行列を更新
-    dokannWorldTransform_.matWorld_ =
-        MathUtility::MakeTranslateMatrix(dokannWorldTransform_.translation_);
-
-    dokannWorldTransform_.TransferMatrix();
-
-    // 上側のDokannの行列を更新
-    dokannUpperWorldTransform_.matWorld_ =
-        MathUtility::MakeTranslateMatrix(dokannUpperWorldTransform_.translation_);
-
-    // 上下反転を維持する
-    dokannUpperWorldTransform_.matWorld_.m[1][1] = -1.0f;
-
-    dokannUpperWorldTransform_.TransferMatrix();
 
     // Chickの位置
     float chickX = chickWorldTransform_.translation_.x;
     float chickY = chickWorldTransform_.translation_.y + 4.3f;
 
-    // DokannのX座標
-    float dokannX = dokannWorldTransform_.translation_.x;
-
-    // X方向の当たり判定
-    bool hitX =
-        (chickX + kChickHalfWidth > dokannX - kDokannHalfWidth) &&
-        (chickX - kChickHalfWidth < dokannX + kDokannHalfWidth);
-
-    // 下側のDokannの上端
-    float lowerDokannTop =
-        dokannWorldTransform_.translation_.y + 8.29f;
-
-    // 上側のDokannの下端
-    float upperDokannBottom =
-        dokannUpperWorldTransform_.translation_.y - 8.29f;
-
-    // Chickと下側のDokannの当たり判定
-    bool hitLower =
-        hitX &&
-        (chickY - kChickHalfHeight < lowerDokannTop);
-
-    // Chickと上側のDokannの当たり判定
-    bool hitUpper =
-        hitX &&
-        (chickY + kChickHalfHeight > upperDokannBottom);
-
-    // 衝突判定
-    bool isHit = hitLower || hitUpper;
-
-    // 衝突した瞬間だけデバッグ出力
-    if (isHit && !isChickHit_)
+    // 3組のDokannとの衝突判定
+    for (size_t i = 0; i < kDokannCount; ++i)
     {
-        DebugText::GetInstance()->ConsolePrintf(
-            "Chick Hit Dokann! Lower:%d Upper:%d\n",
-            hitLower, hitUpper);
+        // DokannのX座標
+        float dokannX = dokannWorldTransforms_[i].translation_.x;
 
-        DebugText::GetInstance()->ConsolePrintf(
-            "ChickY:%.2f LowerTop:%.2f UpperBottom:%.2f\n",
-            chickY, lowerDokannTop, upperDokannBottom);
+        // X方向の当たり判定
+        bool hitX =
+            (chickX + kChickHalfWidth > dokannX - kDokannHalfWidth) &&
+            (chickX - kChickHalfWidth < dokannX + kDokannHalfWidth);
+
+        // 下側のDokannの上端
+        float lowerDokannTop =
+            dokannWorldTransforms_[i].translation_.y + 8.29f;
+
+        // 上側のDokannの下端
+        float upperDokannBottom =
+            dokannUpperWorldTransforms_[i].translation_.y - 8.29f;
+
+        // Chickと下側のDokannの当たり判定
+        bool hitLower =
+            hitX &&
+            (chickY - kChickHalfHeight < lowerDokannTop);
+
+        // Chickと上側のDokannの当たり判定
+        bool hitUpper =
+            hitX &&
+            (chickY + kChickHalfHeight > upperDokannBottom);
+
+        // どちらかの土管に衝突した場合
+        if (hitLower || hitUpper)
+        {
+            // デバッグ出力
+            DebugText::GetInstance()->ConsolePrintf(
+                "Chick Hit Dokann! Index:%d Lower:%d Upper:%d\n",
+                static_cast<int>(i), hitLower, hitUpper);
+
+            DebugText::GetInstance()->ConsolePrintf(
+                "ChickY:%.2f LowerTop:%.2f UpperBottom:%.2f\n",
+                chickY, lowerDokannTop, upperDokannBottom);
+
+            // 衝突状態にする
+            isChickHit_ = true;
+
+            // 衝突したので判定を終了
+            break;
+        }
     }
-
-    isChickHit_ = isHit;
 }
 
 // 描画
@@ -270,13 +314,17 @@ void FlappyBirdGame::Draw(const Camera& camera)
     chickModel_->Draw(
         chickWorldTransform_, camera);
 
-    // 下側のDokann
-    dokannModel_->Draw(
-        dokannWorldTransform_, camera);
+    // 3組のDokannを描画
+    for (size_t i = 0; i < kDokannCount; ++i)
+    {
+        // 下側のDokann
+        dokannModel_->Draw(
+            dokannWorldTransforms_[i], camera);
 
-    // 上側のDokann
-    dokannModel_->Draw(
-        dokannUpperWorldTransform_, camera);
+        // 上側のDokann
+        dokannModel_->Draw(
+            dokannUpperWorldTransforms_[i], camera);
+    }
 
     Model::PostDraw();
 }
