@@ -103,12 +103,33 @@ void baseBall::Initialize() {
 	}
 	flashRingTransform_.Initialize();
 
+	// 乱数のシード
+	rng_.seed(std::random_device{}());
+
 	// ゲーム状態を初期値にする
 	Reset();
 }
 
+// レベルに応じた難易度の設定(数値を変えれば調整できる)
+void baseBall::ApplyDifficulty(int level) {
+	level_ = std::clamp(level, 0, kMaxLevel);
+
+	// 球速:1レベルごとに +20%
+	pitchSpeed_ = kPitchSpeed * (1.0f + kSpeedUpPerLevel * level_);
+
+	// 1セットの最小球数
+	minPitchCount_ = (std::min)(kMinPitchCount + level_ / 2, kMaxPitchCount);
+
+	// 判定の許容フレームを狭くする(下限あり)
+	goodRange_ = (std::max)(4, kGoodRange - level_);
+	greatRange_ = (std::max)(2, kGreatRange - level_ / 2);
+	perfectRange_ = (level_ >= 3) ? 1 : kPerfectRange;
+}
+
 // ミニゲームが切り替わるたびに呼ぶ:ゲームの状態だけを初期値に戻す
-void baseBall::Reset() {
+void baseBall::Reset(int level) {
+	ApplyDifficulty(level);
+
 	// ボール
 	for (Ball& ball : balls_) {
 		ball.active = false;
@@ -118,6 +139,8 @@ void baseBall::Reset() {
 		ball.velocity = { 0.0f, 0.0f, 0.0f };
 	}
 	spawnTimer_ = kPitchInterval - 1;
+	pitchRemaining_ = 0;
+	pitchGapTimer_ = 0;
 
 	// バット
 	batWorldTransform_.translation_ = { -7.0f, 1.0f, 0.0f };
@@ -164,12 +187,35 @@ void baseBall::SpawnBall() {
 		if (ball.active) {
 			continue;
 		}
+
+		// 球種を決める
+		float baseFrames = kPitchDistance / pitchSpeed_;
+		float mul = 1.0f;
+		ball.type = PitchType::Straight;
+
+		ball.curveAngle = kCurveAngleDeg * 3.14159265f / 180.0f;
+
+		std::uniform_int_distribution<int> d(0, 99);
+		int r = d(rng_);
+		if (level_ >= 1 && r < 15 + level_ * 6) {
+			ball.type = PitchType::ChangeUp;
+			mul = 1.3f;
+		} else if (level_ >= 2 && r < 35 + level_ * 6) {
+			ball.type = PitchType::Curve;
+			mul = 1.1f;
+
+			std::uniform_int_distribution<int> side(0, 1);
+			ball.curveDir = side(rng_) ? 1.0f : -1.0f;
+		}
+		ball.totalFrames = (std::max)(1, static_cast<int>(baseFrames * mul));
+
+		// 初期化
 		ball.active = true;
 		ball.state = BallState::Pitched;
 		ball.timer = 0;
 		ball.judged = false;
-		ball.velocity = { 0.0f, 0.0f, -kPitchSpeed };
-		ball.worldTrnasform.translation_ = { 0.0f, 2.0f, 50.0f };
+		ball.velocity = {0.0f, 0.0f, 0.0f};
+		ball.worldTrnasform.translation_ = {worldTransform_.translation_.x, kTargetWorldY, 50.0f};
 		return;
 	}
 }
@@ -205,9 +251,9 @@ baseBall::Judge baseBall::JudgeTiming() {
 		return Judge::Miss;
 	}
 	int diff = std::abs(swingTimer_ - kContactFrame);
-	if (diff <= kPerfectRange) return Judge::Perfect;
-	if (diff <= kGreatRange)   return Judge::Great;
-	if (diff <= kGoodRange)    return Judge::Good;
+	if (diff <= perfectRange_) return Judge::Perfect;
+	if (diff <= greatRange_)   return Judge::Great;
+	if (diff <= goodRange_)    return Judge::Good;
 	return Judge::Miss;
 }
 
@@ -233,9 +279,22 @@ void baseBall::ApplyJudge(Judge judge) {
 }
 
 void baseBall::UpdateBall() {
+	// 一定間隔で「投球セット」を開始(1~3球をランダムに決める)
 	if (++spawnTimer_ >= kPitchInterval) {
 		spawnTimer_ = 0;
+		std::uniform_int_distribution<int> dist(minPitchCount_, kMaxPitchCount);
+		pitchRemaining_ = dist(rng_);
+		pitchGapTimer_ = 1; // 1球目はすぐ投げる
+	}
+
+	// セット中は kPitchGapFrames(1秒)ごとに1球ずつ投げる
+	if (pitchRemaining_ > 0 && --pitchGapTimer_ <= 0) {
 		SpawnBall();
+		pitchRemaining_--;
+
+		int minGap = (std::max)(30, kPitchGapFrames - level_ * 6);
+		std::uniform_int_distribution<int> gap(minGap, kPitchGapFrames);
+		pitchGapTimer_ = gap(rng_);
 	}
 
 	for (Ball& ball : balls_) {
@@ -247,11 +306,36 @@ void baseBall::UpdateBall() {
 
 		switch (ball.state) {
 		case BallState::Pitched: {
-			pos.x += ball.velocity.x;
-			pos.y += ball.velocity.y;
-			pos.z += ball.velocity.z;
+			ball.timer++;
+			const float startZ = 50.0f;
+			const float batZ = batWorldTransform_.translation_.z;
+			float u = static_cast<float>(ball.timer) / ball.totalFrames;
 
-			if (!ball.judged && pos.z <= batWorldTransform_.translation_.z) {
+			float e = u; // 進行度の変形
+			float offX = 0.0f;
+			float offY = 0.0f;
+
+			if (u < 1.0f) {
+				if (ball.type == PitchType::ChangeUp) {
+					// 前半は速く、手前で急に失速
+					e = 0.4f * u + 0.6f * (1.0f - (1.0f - u) * (1.0f - u));
+				} else if (ball.type == PitchType::Curve) {
+					float k = std::sin(u * 3.14159265f) * (1.0f - u);
+					float amp = kCurveAmount * k;
+					offX = amp * std::cos(ball.curveAngle) * ball.curveDir;
+					offY = amp * std::sin(ball.curveAngle);
+				}
+			}
+
+			// ボックスの位置から打点へ、横方向にも移動する
+			const float releaseX = worldTransform_.translation_.x;
+			const float lateral = (std::min)(u, 1.0f);
+
+			pos.x = releaseX + (kTargetWorldX - releaseX) * lateral + offX;
+			pos.y = kTargetWorldY + offY;
+			pos.z = startZ + (batZ - startZ) * e;
+
+			if (!ball.judged && ball.timer >= ball.totalFrames) {
 				ball.judged = true;
 
 				Judge judge = JudgeTiming();
@@ -261,25 +345,25 @@ void baseBall::UpdateBall() {
 					ball.state = BallState::Hit;
 					ball.timer = 0;
 					switch (judge) {
-					case baseBall::Judge::Perfect:
-						ball.velocity = { 0.05f, 0.60f, 2.0f };
+					case Judge::Perfect:
+						ball.velocity = {0.05f, 0.60f, 2.0f};
 						break;
-					case baseBall::Judge::Great:
-						ball.velocity = { 0.05f, 0.45f, 1.5f };
+					case Judge::Great:
+						ball.velocity = {0.05f, 0.45f, 1.5f};
 						break;
-					case baseBall::Judge::Good:
-						ball.velocity = { 0.05f, 0.20f, 0.8f };
+					case Judge::Good:
+						ball.velocity = {0.05f, 0.20f, 0.8f};
 						break;
 					default:
 						break;
 					}
 				}
-			}
-			else if (pos.z < -5.0f) {
+			} else if (pos.z < -5.0f) {
 				ball.active = false;
 			}
 			break;
 		}
+
 		case BallState::Hit:
 			ball.velocity.y -= 0.01f;
 			pos.x += ball.velocity.x;
@@ -300,13 +384,13 @@ void baseBall::UpdateTimingUI() {
 		const Ball& ball = balls_[i];
 		WorldTransform& ringTransform = approachRingTransforms_[i];
 
-		if (!ball.active || ball.state != BallState::Pitched) {
+		// 投球中のストレートだけリングを出す(変化球はボールを見て打つ)
+		if (!ball.active || ball.state != BallState::Pitched || ball.type != PitchType::Straight) {
 			approachRingActive_[i] = false;
 			continue;
 		}
 
-		float framesToArrive =
-			(ball.worldTrnasform.translation_.z - batWorldTransform_.translation_.z) / kPitchSpeed;
+		float framesToArrive = static_cast<float>(ball.totalFrames - ball.timer);
 		float framesUntilPress = framesToArrive - static_cast<float>(kContactFrame);
 
 		if (framesUntilPress > kApproachFrame) {
@@ -320,7 +404,7 @@ void baseBall::UpdateTimingUI() {
 		float scale = 1.0f + (framesUntilPress / kApproachFrame) * (kApproachStartScale - 1.0f);
 		scale = (std::max)(scale, 0.5f);
 
-		ringTransform.scale_ = { scale, scale, scale };
+		ringTransform.scale_ = {scale, scale, scale};
 		UpdateWorld(ringTransform);
 	}
 

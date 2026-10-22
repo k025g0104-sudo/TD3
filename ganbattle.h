@@ -16,17 +16,12 @@ public:
 
 	void Update();
 
-	void Draw(const KamataEngine::Camera& camera);
+	void Draw();
 
 	// ---- 結果取得 ----
 	bool IsFinished() const { return finished_; } // 結果表示が終わった
 	bool IsWin() const { return finished_ && result_ == Result::Win; }
 	bool IsGameOver() const { return finished_ && (result_ == Result::Lose || result_ == Result::Foul); }
-
-	// 2D(スプライト)描画。Sprite::PreDraw ~ PostDraw の間で呼ぶ
-	void DrawUI();
-
-	void Draw(); // ← (const KamataEngine::Camera& camera) をやめる
 
 private:
 	enum class Phase {

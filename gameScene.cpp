@@ -76,10 +76,12 @@ void gameScene::NextMiniGame() {
 		break;
 	case gameScene::FlappyBird:
 		ganeScene_ = Western;
+		ganbattle_->Start();
 		break;
 	case gameScene::Western:
 		ganeScene_ = basebool;
-		baseBall_->Reset();
+		loopCount_++;
+		baseBall_->Reset(loopCount_);
 		break;
 	default:
 		break;
@@ -88,7 +90,7 @@ void gameScene::NextMiniGame() {
 
 void gameScene::Update() {
 	Input* input = Input::GetInstance();
-
+	const float groundY = -10.0f;
 	gameCamera_->Update();
 
 	switch (scene_) {
@@ -96,6 +98,7 @@ void gameScene::Update() {
 		if (input->TriggerKey(DIK_RETURN) || input->TriggerKey(DIK_SPACE)) {
 			scene_ = Game;
 			ganeScene_ = basebool;
+			loopCount_ = 0;
 			baseBall_->Reset();
 			miniGameTimer_ = 0;
 			totalTimer_ = 0;
@@ -116,37 +119,26 @@ void gameScene::Update() {
 		// ミニゲームごとに地面の位置を設定
 		switch (ganeScene_) {
 		case basebool:
-		case Western:
-			gameBackground_->SetYukaPosition({0.0f, 0.0f, 0.0f});
+			baseBall_->Update();
 			break;
 
-		case FlappyBird: {
-			const float groundY = -10.0f;
+		case FlappyBird:
+			flappyBirdGame_->Update();
 			gameBackground_->SetYukaPosition({0.0f, groundY, 0.0f});
 			flappyBirdGame_->SetGroundHeight(groundY);
 			break;
-		}
-		default:
-			break;
-		}
 
-		// ミニゲームの更新
-		switch (ganeScene_) {
-		case basebool:
-			baseBall_->Update();
-			break;
-		case FlappyBird:
-			flappyBirdGame_->Update();
-			break;
 		case Western:
 			ganbattle_->Update();
+			gameBackground_->SetYukaPosition({0.0f, 0.0f, 0.0f});
 			if (ganbattle_->IsFinished()) {
 				NextMiniGame();
 			}
 			break;
+
 		default:
 			break;
-		}
+		}		
 
 #ifdef _DEBUG
 		// デバッグ用:LSHIFTで即座に次へ
@@ -163,9 +155,6 @@ void gameScene::Update() {
 			miniGameTimer_ = 0;
 			totalTimer_ = 0;
 		}
-		break;
-
-	default:
 		break;
 	}
 }
@@ -210,12 +199,5 @@ void gameScene::Draw() {
 
 	default:
 		break;
-	}
-}
-
-// 2D描画(Sprite::PreDraw ~ PostDraw の間で呼ばれる)
-void gameScene::DrawUI() {
-	if (scene_ == Game && ganeScene_ == Western) {
-		ganbattle_->DrawUI();
 	}
 }

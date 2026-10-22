@@ -1,6 +1,8 @@
 #pragma once
 #include "KamataEngine.h"
 #include <array>
+#include <random>
+enum class PitchType { Straight, ChangeUp, Curve };
 class baseBall {
 public:
 	enum class Judge {
@@ -14,49 +16,63 @@ public:
 	baseBall();
 	~baseBall();
 	void Initialize();
-	void Reset(); // ゲーム状態を初期値に戻す(ミニゲーム切り替え時に呼ぶ)
+	void Reset(int level = 0); // ゲーム状態を初期値に戻す(ミニゲーム切り替え時に呼ぶ)
 	void Update();
 	void Draw(const KamataEngine::Camera& camera);
-
 
 	Judge GetLastJudge() const { return lastJudge_; }
 	int GetCombo() const { return combo_; }
 	int GetScore() const { return score_; }
+
 private:
-	//ボール
+	// ボール
 	enum class BallState {
-		Pitched,//投げられた状態
-		Hit,//打たれた状態
+		Pitched, // 投げられた状態
+		Hit,     // 打たれた状態
 	};
 
 	struct Ball {
 		KamataEngine::WorldTransform worldTrnasform;
-		KamataEngine::Vector3 velocity = { 0.0f,0.0f,0.0f };
+		KamataEngine::Vector3 velocity = {0.0f, 0.0f, 0.0f};
 		BallState state = BallState::Pitched;
 		int timer = 0;
 		bool active = false;
 		bool judged = false;
+
+		PitchType type = PitchType::Straight;
+		int totalFrames = 60;
+		float curveDir = 1.0f;
+		float curveAngle = 0.0f; 
 	};
 
+	void ApplyDifficulty(int level);
 	void SpawnBall();
 	void UpdateBat();
 	void UpdateBall();
 	Judge JudgeTiming();
 	void ApplyJudge(Judge judge);
 	void UpdateTimingUI(); // 縮小円・判定演出の更新
-	void UpdateTargetPos(const KamataEngine::Camera& camera); // ★追加: 打点を画面座標に変換して円を配置
+	void UpdateTargetPos(const KamataEngine::Camera& camera);
 
-	//バッターbox君
+	// バッターbox君
 	KamataEngine::Model* model_ = nullptr;
 	KamataEngine::WorldTransform worldTransform_;
 
-	//野球ボール
+	// 野球ボール
 	KamataEngine::Model* baseballModel_ = nullptr;
 	static inline const int kMaxBalls = 16;
-	std::array<Ball, kMaxBalls>balls_;
-	int spawnTimer_ = 0;
+	std::array<Ball, kMaxBalls> balls_;
+	int spawnTimer_ = 0; // 「投球セット」を開始するまでのタイマー
 
-	//バット
+	// 1回の投球セットで投げる球数(ランダム)と投げる間隔
+	static constexpr int kMinPitchCount = 1;
+	static constexpr int kMaxPitchCount = 3;
+	static constexpr int kPitchGapFrames = 60; // 球と球の間隔(1秒)
+	int pitchRemaining_ = 0;                   // このセットで残りの球数
+	int pitchGapTimer_ = 0;                    // 次の球を投げるまでのタイマー
+	std::mt19937 rng_;
+
+	// バット
 	KamataEngine::Model* batModel_ = nullptr;
 	KamataEngine::WorldTransform batWorldTransform_;
 	bool isSwinging_ = false;
@@ -67,7 +83,7 @@ private:
 	int combo_ = 0;
 	int score_ = 0;
 
-	static constexpr float  kBPM = 80.0f;
+	static constexpr float kBPM = 80.0f;
 	static constexpr float kFramesPerBeat = 3600.0f / kBPM;
 	static constexpr int kTravelBeats = 4;
 	static constexpr float kPitchDistance = 50.0f;
@@ -83,9 +99,17 @@ private:
 	static inline const int kGreatRange = 4;
 	static inline const int kGoodRange = 7;
 
+	static constexpr int kMaxLevel = 5;
+	static constexpr float kSpeedUpPerLevel = 1.0;
+	int level_ = 0;
+	float pitchSpeed_ = kPitchSpeed;
+	int minPitchCount_ = kMinPitchCount;
+	int perfectRange_ = kPerfectRange;
+	int greatRange_ = kGreatRange;
+	int goodRange_ = kGoodRange;
+
 	static inline const float kBatStartAngle = 1.0f;
 	static inline const float kBatendAngle = -2.0f;
-
 
 	static constexpr float kTargetWorldX = 0.0f;
 	static constexpr float kTargetWorldY = 2.0f;
@@ -94,12 +118,16 @@ private:
 	static constexpr float kApproachStartScale = 3.0f;
 	static constexpr int kFlashFrame = 20;
 
+	static constexpr float kCurveAmount = 8.0f;    // 曲がりの大きさ
+	static constexpr float kCurveAngleDeg = 30.0f; // 曲がる向き(0:真横 / 90:真上 / -90:真下)
+
 	static inline const int kSwingCoolDownFrame = 30;
 	int swingCooldowonTimer_ = 0;
+	
 
 	KamataEngine::Model* ringModel_ = nullptr;
 	KamataEngine::WorldTransform targetRingTransform_;
-	std::array<KamataEngine::WorldTransform, kMaxBalls>approachRingTransforms_;
+	std::array<KamataEngine::WorldTransform, kMaxBalls> approachRingTransforms_;
 	KamataEngine::WorldTransform flashRingTransform_;
 
 	std::array<bool, kMaxBalls> approachRingActive_ = {};
