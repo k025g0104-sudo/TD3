@@ -11,15 +11,16 @@
 
 using namespace KamataEngine;
 
-
-static const char* SceneName(int s)
-{
-	switch (s)
-	{
-	case 0: return "basebool";
-	case 1: return "FlappyBird";
-	case 2: return "Western";
-	default: return "Unknown";
+static const char* SceneName(int s) {
+	switch (s) {
+	case 0:
+		return "basebool";
+	case 1:
+		return "FlappyBird";
+	case 2:
+		return "Western";
+	default:
+		return "Unknown";
 	}
 }
 
@@ -36,21 +37,21 @@ gameScene::~gameScene() {
 
 // 初期化
 void gameScene::Intialize() {
-    // 野球ゲーム
-    baseBall_ = new baseBall();
-    baseBall_->Initialize();
-	
-    // FlappyBird
-    flappyBirdGame_ = new FlappyBirdGame();
-    flappyBirdGame_->Initialize();
+	// 野球ゲーム
+	baseBall_ = new baseBall();
+	baseBall_->Initialize();
 
-    // カメラ
-    gameCamera_ = new GameCamera();
-    gameCamera_->Initialize();
+	// FlappyBird
+	flappyBirdGame_ = new FlappyBirdGame();
+	flappyBirdGame_->Initialize();
 
-    // 共通背景
-    gameBackground_ = new GameBackground();
-    gameBackground_->Initialize();
+	// カメラ
+	gameCamera_ = new GameCamera();
+	gameCamera_->Initialize();
+
+	// 共通背景
+	gameBackground_ = new GameBackground();
+	gameBackground_->Initialize();
 
 	// 野球ボールモデル
 	baseballModel_ = Model::CreateFromOBJ("baseboll");
@@ -63,16 +64,15 @@ void gameScene::Intialize() {
 	// Western(早撃ちゲーム)
 	ganbattle_ = new ganbattle();
 	ganbattle_->Initialize();
-
 }
 
 void gameScene::NextMiniGame() {
 	miniGameTimer_ = 0;
 
-	switch (ganeScene_)
-	{
+	switch (ganeScene_) {
 	case gameScene::basebool:
 		ganeScene_ = FlappyBird;
+		flappyBirdGame_->Reset();
 		break;
 	case gameScene::FlappyBird:
 		ganeScene_ = Western;
@@ -87,42 +87,36 @@ void gameScene::NextMiniGame() {
 	}
 }
 
-void gameScene::Update()
-{
+void gameScene::Update() {
 	Input* input = Input::GetInstance();
 	const float groundY = -10.0f;
 	gameCamera_->Update();
 
-	switch (scene_)
-	{
+	switch (scene_) {
 	case Title:
-		if (input->TriggerKey(DIK_RETURN) || input->TriggerKey(DIK_SPACE))
-		{
+		if (input->TriggerKey(DIK_RETURN) || input->TriggerKey(DIK_SPACE)) {
 			scene_ = Game;
 			ganeScene_ = basebool;
 			loopCount_ = 0;
 			baseBall_->Reset();
-			miniGameTimer_ = 0; 
-			totalTimer_ = 0;		
+			miniGameTimer_ = 0;
+			totalTimer_ = 0;
 		}
 		break;
 
-	case Game:		
-		if (++totalTimer_>=kTotalFrames)
-		{
-			scene_ = Clear;			
+	case Game:
+		if (++totalTimer_ >= kTotalFrames) {
+			scene_ = Clear;
 			break;
 		}
 
 		// 5秒経過したら次のミニゲームへ
-		if (++miniGameTimer_ >= kMiniGameFrames)
-		{
-			NextMiniGame();			
+		if (ganeScene_ != Western && ++miniGameTimer_ >= kMiniGameFrames) {
+			NextMiniGame();
 		}
-		
-		// ミニゲームの更新
-		switch (ganeScene_)
-		{
+
+		// ミニゲームごとに地面の位置を設定
+		switch (ganeScene_) {
 		case basebool:
 			baseBall_->Update();       
 			break;
@@ -131,29 +125,44 @@ void gameScene::Update()
 			flappyBirdGame_->Update(); 		
 			gameBackground_->SetYukaPosition({ 0.0f, groundY, 0.0f });
 			flappyBirdGame_->SetGroundHeight(groundY);			
-			break;
+			flappyBirdGame_->SetGroundHeight(groundY);
 
 		case Western:
 			ganbattle_->Update(); 
 			gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
 			break;
-
+		}
 		default:
 			break;
+		// ミニゲームの更新
+		switch (ganeScene_) {
+		case basebool:
+			baseBall_->Update();
+			break;
+		case FlappyBird:
+			flappyBirdGame_->Update();
+			break;
+		case Western:
+			ganbattle_->Update();
+			if (ganbattle_->IsFinished()) {
+				NextMiniGame();
+			}
+			break;
+		default:
+			break;
+		default: break;
 		}
 
 #ifdef _DEBUG
 		// デバッグ用:LSHIFTで即座に次へ
-		if (input->TriggerKey(DIK_LSHIFT))
-		{
+		if (input->TriggerKey(DIK_LSHIFT)) {
 			NextMiniGame();
 		}
 #endif
 		break;
 
 	case Clear:
-		if (input->TriggerKey(DIK_RETURN) || input->TriggerKey(DIK_SPACE))
-		{
+		if (input->TriggerKey(DIK_RETURN) || input->TriggerKey(DIK_SPACE)) {
 			scene_ = Title;
 			ganeScene_ = basebool;
 			miniGameTimer_ = 0;
@@ -168,42 +177,50 @@ void gameScene::Update()
 
 // 描画
 void gameScene::Draw() {
-    switch (scene_) {
-    case Title:
-        // タイトル画面
-        break;
+	switch (scene_) {
+	case Title:
+		// タイトル画面
+		break;
 
-    case Game:
-        // 共通背景
-        gameBackground_->Draw(gameCamera_->GetCamera());
+	case Game:
+		// 共通背景
+		gameBackground_->Draw(gameCamera_->GetCamera());
 
-        // 各ミニゲームの描画
-        switch (ganeScene_) {
-        case basebool:
-            Model::PreDraw();
+		// 各ミニゲームの描画
+		switch (ganeScene_) {
+		case basebool:
+			Model::PreDraw();
 
-            baseBall_->Draw(gameCamera_->GetCamera());
+			baseBall_->Draw(gameCamera_->GetCamera());
 
-            Model::PostDraw();
-            break;
+			Model::PostDraw();
+			break;
 
-        case FlappyBird:
-            flappyBirdGame_->Draw(gameCamera_->GetCamera());
-            break;
+		case FlappyBird:
+			flappyBirdGame_->Draw(gameCamera_->GetCamera());
+			break;
 
-        case Western:
-            ganbattle_->Draw(gameCamera_->GetCamera());
-            break;      
-        default:
-            break;
-        }
-        break;
+		case Western:
+			ganbattle_->Draw();
+			break;
 
-    case Clear:
-        // クリア画面
-        break;
+		default:
+			break;
+		}
+		break;
 
-    default:
-        break;
-    }
+	case Clear:
+		// クリア画面
+		break;
+
+	default:
+		break;
+	}
+}
+
+// 2D描画(Sprite::PreDraw ~ PostDraw の間で呼ばれる)
+void gameScene::DrawUI() {
+	if (scene_ == Game && ganeScene_ == Western) {
+		ganbattle_->DrawUI();
+	}
 }

@@ -13,6 +13,9 @@ public:
     // 初期化
     void Initialize();
 
+    // ゲーム状態を初期値に戻す
+    void Reset();
+
     // 更新
     void Update();
 
@@ -34,7 +37,7 @@ private:
     KamataEngine::Model* dokannModel_ = nullptr;
 
     // 土管の組数
-    static constexpr size_t kDokannCount = 3;
+    static constexpr size_t kDokannCount = 4;
 
     // 下側のDokann
     std::array<KamataEngine::WorldTransform, kDokannCount> dokannWorldTransforms_;
@@ -52,7 +55,7 @@ private:
     static constexpr float kDokannStartX = 10.0f;
 
     // Dokann同士のX方向の間隔
-    static constexpr float kDokannSpacing = 12.0f;
+    static constexpr float kDokannSpacing = 8.5f;
 
     // Chickの上下方向の速度
     float chickVelocityY_ = 0.0f;

@@ -27,10 +27,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 		imguiManager->End();
 
 		dxCommon->PreDraw();
-		scene->Draw();
+		scene->Draw();		
+		scene->DrawUI();		
 		imguiManager->Draw();
 		dxCommon->PostDraw();
 	}
+
+	
 
 	delete scene;
 	KamataEngine::Finalize();
