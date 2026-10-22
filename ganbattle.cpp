@@ -368,17 +368,3 @@ void ganbattle::Draw() {
 
 	Model::PostDraw();
 }
-
-void ganbattle::DrawUI() {
-	//if (currentNumber_ < 1 || currentNumber_ > 3) {
-	//	return;
-	//}
-	//Sprite* s = numSprite_[currentNumber_ - 1];
-
-	//// 大きく出て、縮みながら薄くなる
-	//float size = kNumSize * (0.8f + 0.4f * numFrac_);
-	//float alpha = std::fmin(1.0f, numFrac_ * 2.0f + 0.2f);
-	//s->SetSize({size, size});
-	//s->SetColor({1.0f, 1.0f, 1.0f, alpha});
-	//s->Draw();
-}
