@@ -69,8 +69,12 @@ private:
 	int lastCountPrint_ = -1;
 
 	// カウントダウン数字
-	uint32_t numTex_[3] = {}; // 0:"1" 1:"2" 2:"3"
-	KamataEngine::Sprite* numSprite_[3] = {};
+	KamataEngine::Model* numModel_[3] = {}; // 0:"1" 1:"2" 2:"3"
+	KamataEngine::WorldTransform numWorldTransform_;
+	KamataEngine::Vector3 numBasePos_ = {};
+	KamataEngine::Vector3 numBaseRot_ = {};
+	float numBaseScale_ = 1.0f;
+	void ResetNumBase();
 	int currentNumber_ = 0; // 表示中の数字(0なら非表示)
 	float numFrac_ = 0.0f;  // その数字の残り割合(1→0)
 
