@@ -11,11 +11,16 @@ const Vector3 kCamPos = {0.0f, 4.0f, 0.0f};
 const Vector3 kCamRot = {0.0f, 0.0f, 0.0f};
 
 // カウント数字の表示
-const Vector2 kNumCenter = {640.0f, 360.0f}; // 画面中央(解像度に合わせて変更)
-constexpr float kNumSize = 256.0f;           // 数字の基本サイズ(px)
+//const Vector2 kNumCenter = {640.0f, 360.0f}; // 画面中央(解像度に合わせて変更)
+//constexpr float kNumSize = 256.0f;           // 数字の基本サイズ(px)
 
 constexpr float kDt = 1.0f / 60.0f; // 1フレームの時間
 constexpr float kPi = 3.14159265f;
+
+// カウント数字(元は10x10のXZ平面なので、X回転で立ててカメラへ向ける)
+const Vector3 kNumPos = {0.0f, 4.0f, 10.0f};
+const Vector3 kNumRot = {kPi * 0.5f, kPi, 0.0f};
+constexpr float kNumScale = 0.5f;
 
 // カウント
 constexpr float kCountBase = 3.0f;   // 最低待ち時間
@@ -43,7 +48,7 @@ ganbattle::~ganbattle() {
 	delete ganModel_;
 	delete ganManModel_;
 	for (int i = 0; i < 3; ++i) {
-		delete numSprite_[i];
+		delete numModel_[i];
 	}
 }
 // WorldTransformの行列を更新して転送する(拡縮 → X回転 → Y回転 → 移動)
@@ -81,17 +86,11 @@ void ganbattle::Initialize() {
 	ganManWorldTransform_.Initialize();
 
 	// カウントダウン数字
-	const char* paths[3] = {
-	    "./Resources/numbers1.png",
-	    "./Resources/numbers2.png",
-	    "./Resources/numbers3.png",
-	};
-	for (int i = 0; i < 3; ++i) {
-		numTex_[i] = TextureManager::Load(paths[i]);
-		numSprite_[i] = Sprite::Create(numTex_[i], kNumCenter);
-		numSprite_[i]->SetAnchorPoint({0.5f, 0.5f}); // 中心基準にする
-		numSprite_[i]->SetSize({kNumSize, kNumSize});
-	}
+	// カウントダウン数字(3Dモデル)
+	numModel_[0] = Model::CreateFromOBJ("numbers1");
+	numModel_[1] = Model::CreateFromOBJ("numbers2");
+	numModel_[2] = Model::CreateFromOBJ("numbers3");
+	numWorldTransform_.Initialize();
 
 	camera_.Initialize();
 	camera_.translation_ = kCamPos;
@@ -100,6 +99,7 @@ void ganbattle::Initialize() {
 
 	ResetGunBase();
 	ResetManBase();
+	ResetNumBase();  
 
 	Start();
 }
@@ -254,6 +254,12 @@ void ganbattle::ResetManBase() {
 	manBaseScale_ = kManScale;
 }
 
+void ganbattle::ResetNumBase() {
+	numBasePos_ = kNumPos;
+	numBaseRot_ = kNumRot;
+	numBaseScale_ = kNumScale;
+}
+
 void ganbattle::UpdateObjectDebug() {
 #ifdef _DEBUG
 	// ---- 銃 ----
@@ -267,6 +273,16 @@ void ganbattle::UpdateObjectDebug() {
 	ImGui::Text("pos: %.2f, %.2f, %.2f", gunBasePos_.x, gunBasePos_.y, gunBasePos_.z);
 	ImGui::Text("rot: %.2f, %.2f, %.2f", gunBaseRot_.x, gunBaseRot_.y, gunBaseRot_.z);
 	ImGui::Text("scale: %.2f", gunBaseScale_);
+	ImGui::End();
+
+	//----number---
+	ImGui::Begin("ganbattle number");
+	ImGui::DragFloat3("position", &numBasePos_.x, 0.05f);
+	ImGui::DragFloat3("rotation", &numBaseRot_.x, 0.01f);
+	ImGui::DragFloat("scale", &numBaseScale_, 0.01f, 0.01f, 10.0f);
+	if (ImGui::Button("reset")) {
+		ResetNumBase();
+	}
 	ImGui::End();
 
 	// ---- 相手ガンマン ----
@@ -330,8 +346,15 @@ void ganbattle::UpdateTransforms() {
 	ganWorldTransform_.rotation_ = gunRot;
 	ganWorldTransform_.scale_ = {gunBaseScale_, gunBaseScale_, gunBaseScale_};
 
+		// カウント数字(大きく出て縮む)
+	float numScale = numBaseScale_ * (0.8f + 0.4f * numFrac_);
+	numWorldTransform_.translation_ = numBasePos_;
+	numWorldTransform_.rotation_ = numBaseRot_;
+	numWorldTransform_.scale_ = {numScale, numScale, numScale};
+
 	UpdateWorldMatrix(ganManWorldTransform_);
 	UpdateWorldMatrix(ganWorldTransform_);
+	UpdateWorldMatrix(numWorldTransform_);
 }
 
 void ganbattle::Draw() {
@@ -339,20 +362,23 @@ void ganbattle::Draw() {
 
 	ganManModel_->Draw(ganManWorldTransform_, camera_);
 	ganModel_->Draw(ganWorldTransform_, camera_);
+	if (currentNumber_ >= 1 && currentNumber_ <= 3) {
+		numModel_[currentNumber_ - 1]->Draw(numWorldTransform_, camera_);
+	}
 
 	Model::PostDraw();
 }
 
 void ganbattle::DrawUI() {
-	if (currentNumber_ < 1 || currentNumber_ > 3) {
-		return;
-	}
-	Sprite* s = numSprite_[currentNumber_ - 1];
+	//if (currentNumber_ < 1 || currentNumber_ > 3) {
+	//	return;
+	//}
+	//Sprite* s = numSprite_[currentNumber_ - 1];
 
-	// 大きく出て、縮みながら薄くなる
-	float size = kNumSize * (0.8f + 0.4f * numFrac_);
-	float alpha = std::fmin(1.0f, numFrac_ * 2.0f + 0.2f);
-	s->SetSize({size, size});
-	s->SetColor({1.0f, 1.0f, 1.0f, alpha});
-	s->Draw();
+	//// 大きく出て、縮みながら薄くなる
+	//float size = kNumSize * (0.8f + 0.4f * numFrac_);
+	//float alpha = std::fmin(1.0f, numFrac_ * 2.0f + 0.2f);
+	//s->SetSize({size, size});
+	//s->SetColor({1.0f, 1.0f, 1.0f, alpha});
+	//s->Draw();
 }
