@@ -24,6 +24,9 @@ public:
 	int GetCombo() const { return combo_; }
 	int GetScore() const { return score_; }
 
+	// ミスの発生回数を取得
+	int GetMissCount() const { return missCount_; }
+
 private:
 	// ボール
 	enum class BallState {
@@ -82,6 +85,9 @@ private:
 	Judge lastJudge_ = Judge::None;
 	int combo_ = 0;
 	int score_ = 0;
+
+	// ミスの発生回数
+	int missCount_ = 0;
 
 	static constexpr float kBPM = 80.0f;
 	static constexpr float kFramesPerBeat = 3600.0f / kBPM;

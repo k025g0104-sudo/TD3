@@ -157,6 +157,9 @@ void baseBall::Reset(int level) {
 	combo_ = 0;
 	score_ = 0;
 
+	// ミス回数を初期化
+	missCount_ = 0;
+
 	// リング
 	const Vector3 hitPosition = { kTargetWorldX, kTargetWorldY, batWorldTransform_.translation_.z };
 	const Vector3 ringRotation = { 0.0f, 1.5f, 0.0f };
@@ -263,6 +266,9 @@ void baseBall::ApplyJudge(Judge judge) {
 	flashRingActive_ = true;
 
 	if (judge == Judge::Miss) {
+		// ミス回数を1増やす
+		++missCount_;
+
 		combo_ = 0;
 		return;
 	}

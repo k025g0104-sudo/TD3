@@ -87,6 +87,10 @@ StyleCopReport.xml
 !Resources/Yuka/Yuka.obj
 !Resources/ring/ring.obj
 !Resources/ganMan/ganMan.obj
+!Resources/numbers1/numbers1.obj
+!Resources/numbers2/numbers2.obj
+!Resources/numbers3/numbers3.obj
+!Resources/syateer/syateer.obj
 *.iobj
 *.pch
 *.pdb

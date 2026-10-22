@@ -59,6 +59,12 @@ class gameScene
 
 	int loopCount_ = 0;
 
+	// プレイヤーの初期残機
+	static constexpr int kInitialLives = 3;
+
+	// プレイヤーの現在の残機
+	int lives_ = kInitialLives;
+
 	int totalTimer_ = 0;
 	static constexpr int kTotalFrames = 60 * 90;
 
