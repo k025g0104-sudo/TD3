@@ -25,6 +25,9 @@ public:
     // 地面の上面の高さを設定
     void SetGroundHeight(float height);
 
+    // Chickが衝突しているか取得
+    bool IsFailed() const { return isChickHit_; }
+
 private:
     // Chickの回転・移動行列を更新
     void UpdateChickMatrix();

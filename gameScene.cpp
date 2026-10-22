@@ -99,6 +99,10 @@ void gameScene::Update() {
 			scene_ = Game;
 			ganeScene_ = basebool;
 			loopCount_ = 0;
+
+			// 残機を初期値の3に戻す
+			lives_ = kInitialLives;
+
 			baseBall_->Reset();
 			miniGameTimer_ = 0;
 			totalTimer_ = 0;
@@ -119,19 +123,100 @@ void gameScene::Update() {
 		// ミニゲームごとに地面の位置を設定
 		switch (ganeScene_) {
 		case basebool:
+		{
+			// 更新前のミス回数を取得
+			int previousMissCount = baseBall_->GetMissCount();
+
+			// 野球ゲームを更新
 			baseBall_->Update();
+
+			// 更新後のミス回数を取得
+			int currentMissCount = baseBall_->GetMissCount();
+
+			// 新しいミスが発生した場合
+			if (currentMissCount > previousMissCount)
+			{
+				// 残機を1減らす
+				--lives_;
+
+				// 現在の残機をデバッグ出力
+				DebugText::GetInstance()->ConsolePrintf(
+					"Remaining Lives: %d\n", lives_);
+
+				// 残機が0になった場合
+				if (lives_ <= 0)
+				{
+					scene_ = Clear;
+				}
+				else
+				{
+					// 残機が残っていれば次のミニゲームへ
+					NextMiniGame();
+				}
+			}
 			break;
+		}
 
 		case FlappyBird:
-			flappyBirdGame_->Update();
-			gameBackground_->SetYukaPosition({0.0f, groundY, 0.0f});
+			// 地面の高さを設定
+			gameBackground_->SetYukaPosition({ 0.0f, groundY, 0.0f });
 			flappyBirdGame_->SetGroundHeight(groundY);
+
+			// FlappyBirdの更新
+			flappyBirdGame_->Update();
+
+			// 失敗した場合
+			if (flappyBirdGame_->IsFailed())
+			{
+				// 残機を1減らす
+				--lives_;
+
+				// 現在の残機をデバッグ出力
+				DebugText::GetInstance()->ConsolePrintf(
+					"Remaining Lives: %d\n", lives_);
+
+				// 残機が0になったらクリアシーンへ
+				if (lives_ <= 0)
+				{
+					scene_ = Clear;
+				}
+				else
+				{
+					// 残機が残っていれば次のミニゲームへ
+					NextMiniGame();
+				}
+			}
 			break;
 
 		case Western:
+			// Westernの更新
 			ganbattle_->Update();
-			gameBackground_->SetYukaPosition({0.0f, 0.0f, 0.0f});
-			if (ganbattle_->IsFinished()) {
+
+			// 地面の位置を設定
+			gameBackground_->SetYukaPosition({ 0.0f, 0.0f, 0.0f });
+
+			// 結果演出が終了した場合
+			if (ganbattle_->IsFinished())
+			{
+				// 敗北またはお手つきの場合
+				if (ganbattle_->IsGameOver())
+				{
+					// 残機を1減らす
+					--lives_;
+
+					// 現在の残機をデバッグ出力
+					DebugText::GetInstance()->ConsolePrintf(
+						"Remaining Lives: %d\n", lives_);
+
+					// 残機が0になったらClearシーンへ
+					if (lives_ <= 0)
+					{
+						scene_ = Clear;
+						break;
+					}
+				}
+
+				// 勝利した場合、または残機が残っている場合
 				NextMiniGame();
 			}
 			break;
