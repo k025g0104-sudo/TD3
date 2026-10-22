@@ -1,6 +1,7 @@
 #pragma once
 #include "KamataEngine.h"
 #include <array>
+#include <random>
 class baseBall {
 public:
 	enum class Judge {
@@ -14,7 +15,7 @@ public:
 	baseBall();
 	~baseBall();
 	void Initialize();
-	void Reset(); // ゲーム状態を初期値に戻す(ミニゲーム切り替え時に呼ぶ)
+	void Reset(int level=0); // ゲーム状態を初期値に戻す(ミニゲーム切り替え時に呼ぶ)
 	void Update();
 	void Draw(const KamataEngine::Camera& camera);
 
@@ -38,13 +39,14 @@ private:
 		bool judged = false;
 	};
 
+	void ApplyDifficulty(int level);
 	void SpawnBall();
 	void UpdateBat();
 	void UpdateBall();
 	Judge JudgeTiming();
 	void ApplyJudge(Judge judge);
 	void UpdateTimingUI(); // 縮小円・判定演出の更新
-	void UpdateTargetPos(const KamataEngine::Camera& camera); // ★追加: 打点を画面座標に変換して円を配置
+	void UpdateTargetPos(const KamataEngine::Camera& camera); 
 
 	//バッターbox君
 	KamataEngine::Model* model_ = nullptr;
@@ -54,7 +56,15 @@ private:
 	KamataEngine::Model* baseballModel_ = nullptr;
 	static inline const int kMaxBalls = 16;
 	std::array<Ball, kMaxBalls>balls_;
-	int spawnTimer_ = 0;
+	int spawnTimer_ = 0; // 「投球セット」を開始するまでのタイマー
+
+	// 1回の投球セットで投げる球数(ランダム)と投げる間隔
+	static constexpr int kMinPitchCount = 1;
+	static constexpr int kMaxPitchCount = 3;
+	static constexpr int kPitchGapFrames = 60; // 球と球の間隔(1秒)
+	int pitchRemaining_ = 0; // このセットで残りの球数
+	int pitchGapTimer_ = 0;  // 次の球を投げるまでのタイマー
+	std::mt19937 rng_;
 
 	//バット
 	KamataEngine::Model* batModel_ = nullptr;
@@ -82,6 +92,15 @@ private:
 	static inline const int kPerfectRange = 2;
 	static inline const int kGreatRange = 4;
 	static inline const int kGoodRange = 7;
+
+	static constexpr int kMaxLevel = 5;
+	static constexpr float kSpeedUpPerLevel = 1.0;
+	int level_ = 0;
+	float pitchSpeed_ = kPitchSpeed;
+	int minPitchCount_ = kMinPitchCount;
+	int perfectRange_ = kPerfectRange;
+	int greatRange_ = kGreatRange;
+	int goodRange_ = kGoodRange;
 
 	static inline const float kBatStartAngle = 1.0f;
 	static inline const float kBatendAngle = -2.0f;

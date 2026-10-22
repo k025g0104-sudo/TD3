@@ -103,12 +103,33 @@ void baseBall::Initialize() {
 	}
 	flashRingTransform_.Initialize();
 
+	// 乱数のシード
+	rng_.seed(std::random_device{}());
+
 	// ゲーム状態を初期値にする
 	Reset();
 }
 
+// レベルに応じた難易度の設定(数値を変えれば調整できる)
+void baseBall::ApplyDifficulty(int level) {
+	level_ = std::clamp(level, 0, kMaxLevel);
+
+	// 球速:1レベルごとに +20%
+	pitchSpeed_ = kPitchSpeed * (1.0f + kSpeedUpPerLevel * level_);
+
+	// 1セットの最小球数
+	minPitchCount_ = (std::min)(kMinPitchCount + level_ / 2, kMaxPitchCount);
+
+	// 判定の許容フレームを狭くする(下限あり)
+	goodRange_ = (std::max)(4, kGoodRange - level_);
+	greatRange_ = (std::max)(2, kGreatRange - level_ / 2);
+	perfectRange_ = (level_ >= 3) ? 1 : kPerfectRange;
+}
+
 // ミニゲームが切り替わるたびに呼ぶ:ゲームの状態だけを初期値に戻す
-void baseBall::Reset() {
+void baseBall::Reset(int level) {
+	ApplyDifficulty(level);
+
 	// ボール
 	for (Ball& ball : balls_) {
 		ball.active = false;
@@ -118,6 +139,8 @@ void baseBall::Reset() {
 		ball.velocity = { 0.0f, 0.0f, 0.0f };
 	}
 	spawnTimer_ = kPitchInterval - 1;
+	pitchRemaining_ = 0;
+	pitchGapTimer_ = 0;
 
 	// バット
 	batWorldTransform_.translation_ = { -7.0f, 1.0f, 0.0f };
@@ -168,7 +191,7 @@ void baseBall::SpawnBall() {
 		ball.state = BallState::Pitched;
 		ball.timer = 0;
 		ball.judged = false;
-		ball.velocity = { 0.0f, 0.0f, -kPitchSpeed };
+		ball.velocity = { 0.0f, 0.0f, -pitchSpeed_ };
 		ball.worldTrnasform.translation_ = { 0.0f, 2.0f, 50.0f };
 		return;
 	}
@@ -205,9 +228,9 @@ baseBall::Judge baseBall::JudgeTiming() {
 		return Judge::Miss;
 	}
 	int diff = std::abs(swingTimer_ - kContactFrame);
-	if (diff <= kPerfectRange) return Judge::Perfect;
-	if (diff <= kGreatRange)   return Judge::Great;
-	if (diff <= kGoodRange)    return Judge::Good;
+	if (diff <= perfectRange_) return Judge::Perfect;
+	if (diff <= greatRange_)   return Judge::Great;
+	if (diff <= goodRange_)    return Judge::Good;
 	return Judge::Miss;
 }
 
@@ -233,9 +256,19 @@ void baseBall::ApplyJudge(Judge judge) {
 }
 
 void baseBall::UpdateBall() {
+	// 一定間隔で「投球セット」を開始(1~3球をランダムに決める)
 	if (++spawnTimer_ >= kPitchInterval) {
 		spawnTimer_ = 0;
+		std::uniform_int_distribution<int> dist(minPitchCount_, kMaxPitchCount);
+		pitchRemaining_ = dist(rng_);
+		pitchGapTimer_ = 1; // 1球目はすぐ投げる
+	}
+
+	// セット中は kPitchGapFrames(1秒)ごとに1球ずつ投げる
+	if (pitchRemaining_ > 0 && --pitchGapTimer_ <= 0) {
 		SpawnBall();
+		pitchRemaining_--;
+		pitchGapTimer_ = kPitchGapFrames;
 	}
 
 	for (Ball& ball : balls_) {
@@ -306,7 +339,7 @@ void baseBall::UpdateTimingUI() {
 		}
 
 		float framesToArrive =
-			(ball.worldTrnasform.translation_.z - batWorldTransform_.translation_.z) / kPitchSpeed;
+			(ball.worldTrnasform.translation_.z - batWorldTransform_.translation_.z) / pitchSpeed_;
 		float framesUntilPress = framesToArrive - static_cast<float>(kContactFrame);
 
 		if (framesUntilPress > kApproachFrame) {

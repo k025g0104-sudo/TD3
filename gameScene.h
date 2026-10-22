@@ -57,6 +57,8 @@ class gameScene
 	int miniGameTimer_ = 0;
 	static constexpr int kMiniGameFrames = 60 * 5;
 
+	int loopCount_ = 0;
+
 	int totalTimer_ = 0;
 	static constexpr int kTotalFrames = 60 * 90;
 
