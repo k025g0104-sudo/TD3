@@ -1,6 +1,7 @@
 #pragma once
 #include "KamataEngine.h"
 #include "Camera.h"
+#include <array>
 
 class baseBall;
 class FlappyBirdGame;
@@ -64,6 +65,18 @@ class gameScene
 
 	// プレイヤーの現在の残機
 	int lives_ = kInitialLives;
+
+	// 残機表示用のハートモデル
+	KamataEngine::Model* heartModel_ = nullptr;
+
+	// 残機表示用ハートの最大数
+	static constexpr int kHeartCount = 3;
+
+	// ハート3個分のワールド座標
+	std::array<KamataEngine::WorldTransform, kHeartCount> heartWorldTransforms_;
+
+	// 残機表示専用カメラ
+	KamataEngine::Camera heartCamera_;
 
 	int totalTimer_ = 0;
 	static constexpr int kTotalFrames = 60 * 90;
