@@ -78,6 +78,15 @@ class gameScene
 	// 残機表示専用カメラ
 	KamataEngine::Camera heartCamera_;
 
+	// クリア画面用モデル
+	KamataEngine::Model* clearModel_ = nullptr;
+
+	// クリア画面用ワールド座標
+	KamataEngine::WorldTransform clearWorldTransform_;
+
+	// クリア画面専用カメラ
+	KamataEngine::Camera clearCamera_;
+
 	int totalTimer_ = 0;
 	static constexpr int kTotalFrames = 60 * 90;
 

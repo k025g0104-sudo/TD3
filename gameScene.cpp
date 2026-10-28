@@ -34,6 +34,7 @@ gameScene::~gameScene() {
 	delete batModel_;
 	delete ganbattle_;
 	delete heartModel_;
+	delete clearModel_;
 }
 
 // 初期化
@@ -84,6 +85,22 @@ void gameScene::Intialize() {
 
 	// カメラ行列を更新
 	heartCamera_.UpdateMatrix();
+
+	// クリア画面用モデルを読み込む
+	clearModel_ = Model::CreateFromOBJ("Clear");
+
+	// クリア画面用ワールド座標を初期化
+	clearWorldTransform_.Initialize();
+
+	// クリア画面専用カメラを初期化
+	clearCamera_.Initialize();
+
+	// カメラの位置と向きを設定
+	clearCamera_.translation_ = { 0.0f, 0.0f, -10.0f };
+	clearCamera_.rotation_ = { 0.0f, 0.0f, 0.0f };
+
+	// カメラ行列を更新
+	clearCamera_.UpdateMatrix();
 
 }
 
@@ -404,8 +421,70 @@ void gameScene::Draw() {
 	}
 
 	case Clear:
-		// クリア画面
+	{
+		// クリア画面用モデルの位置・回転・大きさ
+		clearWorldTransform_.translation_ = { 0.0f, 0.0f, 0.0f };
+		clearWorldTransform_.rotation_ = { -1.5708f, 0.0f, 3.14159f };
+		clearWorldTransform_.scale_ = { 2.0f, 2.0f, 2.0f };
+
+		// 拡大縮小行列
+		Matrix4x4 scaleMatrix =
+			MathUtility::MakeTranslateMatrix({ 0.0f, 0.0f, 0.0f });
+
+		scaleMatrix.m[0][0] = clearWorldTransform_.scale_.x;
+		scaleMatrix.m[1][1] = clearWorldTransform_.scale_.y;
+		scaleMatrix.m[2][2] = clearWorldTransform_.scale_.z;
+
+		// X軸回転行列
+		Matrix4x4 rotateX =
+			MathUtility::MakeTranslateMatrix({ 0.0f, 0.0f, 0.0f });
+
+		float cx = std::cos(clearWorldTransform_.rotation_.x);
+		float sx = std::sin(clearWorldTransform_.rotation_.x);
+
+		rotateX.m[1][1] = cx;
+		rotateX.m[1][2] = sx;
+		rotateX.m[2][1] = -sx;
+		rotateX.m[2][2] = cx;
+
+		// Z軸回転行列
+		Matrix4x4 rotateZ =
+			MathUtility::MakeTranslateMatrix({ 0.0f, 0.0f, 0.0f });
+
+		float cz = std::cos(clearWorldTransform_.rotation_.z);
+		float sz = std::sin(clearWorldTransform_.rotation_.z);
+
+		rotateZ.m[0][0] = cz;
+		rotateZ.m[0][1] = sz;
+		rotateZ.m[1][0] = -sz;
+		rotateZ.m[1][1] = cz;
+
+		// 回転行列を合成
+		Matrix4x4 rotateMatrix =
+			MathUtility::operator*(rotateX, rotateZ);
+
+		// 移動行列
+		Matrix4x4 translateMatrix =
+			MathUtility::MakeTranslateMatrix(clearWorldTransform_.translation_);
+
+		// ワールド行列を合成
+		clearWorldTransform_.matWorld_ =
+			MathUtility::operator*(
+				MathUtility::operator*(scaleMatrix, rotateMatrix),
+				translateMatrix);
+
+		// GPUへ転送
+		clearWorldTransform_.TransferMatrix();
+
+		// Clearモデルを描画
+		Model::PreDraw();
+
+		clearModel_->Draw(clearWorldTransform_, clearCamera_);
+
+		Model::PostDraw();
+
 		break;
+	}
 
 	default:
 		break;

@@ -92,6 +92,9 @@ StyleCopReport.xml
 !Resources/numbers3/numbers3.obj
 !Resources/syateer/syateer.obj
 !Resources/heart/heart.obj
+!Resources/Clear/Clear.obj
+!Resources/makeMozi/makeMozi.obj
+!Resources/Title/Title.obj
 *.iobj
 *.pch
 *.pdb
